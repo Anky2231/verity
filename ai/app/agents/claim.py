@@ -1,16 +1,13 @@
 """ClaimGuard: finds claim-like sentences and checks them against the approved claims register.
-Retrieval is token-overlap for now; swap in pgvector similarity later (same interface)."""
+Retrieval is BM25 plus weighted coverage with a numeric-conflict check (app/retrieval.py); embeddings can replace it later."""
 import re
 from ..models import Finding, Span
+from ..retrieval import Retriever
 
+# Percentages sit outside the \b group: there is no word boundary between "%" and a following space.
 CLAIM_PATTERNS = re.compile(
     r"\b(best|#1|number one|leading|market-leading|best in class|guarantee[ds]?|proven|only|"
-    r"\d+(\.\d+)?\s?%|\d+\s?(hours?|days?|farms?)|compostable|sustainable|organic)\b", re.IGNORECASE)
-_STOP = {"the", "a", "an", "of", "in", "to", "and", "is", "are", "we", "our", "all", "every", "your"}
-
-
-def _tokens(s: str) -> set[str]:
-    return {w for w in re.findall(r"[a-z0-9%]+", s.lower()) if w not in _STOP}
+    r"\d+\s?(hours?|days?|farms?)|compostable|sustainable|organic)\b|\d+(\.\d+)?\s?%", re.IGNORECASE)
 
 
 def _sentences(text: str):
@@ -21,34 +18,34 @@ def _sentences(text: str):
             yield m.start() + lead, s.strip()
 
 
-def best_support(sentence: str, claims: list[dict]) -> tuple[dict | None, float]:
-    toks = _tokens(sentence)
-    best, score = None, 0.0
-    for c in claims:
-        ct = _tokens(c["text"])
-        if not ct:
-            continue
-        overlap = len(toks & ct) / len(ct)
-        if overlap > score:
-            best, score = c, overlap
-    return best, score
+SUPPORTED = 0.75   # coverage of an approved claim needed to count as supported
+PARTIAL = 0.35     # below this we say no claim supports the statement at all
 
 
-def run(text: str, big: dict, support_threshold: float = 0.6) -> list[Finding]:
+def run(text: str, big: dict, support_threshold: float = SUPPORTED) -> list[Finding]:
+    retriever = Retriever(big.get("claims", []))
     findings = []
     for start, sent in _sentences(text):
         if not CLAIM_PATTERNS.search(sent):
             continue
-        claim, score = best_support(sent, big.get("claims", []))
-        if claim and score >= support_threshold:
+        top = retriever.search(sent, k=1)
+        m = top[0] if top else None
+        # A number mismatch only matters when the sentence is really about that claim.
+        conflict = m.conflict if m and m.coverage >= PARTIAL else None
+        if m and m.coverage >= support_threshold and not conflict:
             continue  # supported by an approved claim
+        claim = m.claim if m and m.coverage >= PARTIAL else None
         quote = sent.rstrip(" .!?") or sent
+        if claim and conflict:
+            why, conf = (f"Conflicts with approved claim {claim['id']} ('{claim['text']}'): the numbers differ ({conflict}).", 0.9)
+        elif claim:
+            why, conf = (f"Only partially matches approved claim {claim['id']} ('{claim['text']}'), about {round(m.coverage * 100)}% overlap.", 0.65)
+        else:
+            why, conf = ("No approved claim supports this statement.", 0.85)
         findings.append(Finding(
             agent="claim", rule_id="r_claim_1", clause_citation="Claims §3.1",
             span=Span(start=start, end=start + len(quote)), quoted_text=quote,
-            confidence=0.85 if not claim else 0.65, severity="high",
-            explanation=("No approved claim supports this statement." if not claim else
-                         f"Only partially matches approved claim '{claim['text']}'."),
+            confidence=conf, severity="high", explanation=why,
             suggestion=(f"Use approved wording: \"{claim['text']}\"" if claim else
                         "Remove the claim or have Legal add it to the approved claims register."),
             replacement=(claim["text"] if claim else None),
