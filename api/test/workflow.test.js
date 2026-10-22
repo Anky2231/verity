@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
-import { openDb } from '../src/db.js';
+import { freshDb } from './helpers.js';
 import { seed } from '../src/seed.js';
 import { decide } from '../src/workflow.js';
 import { wordDiff } from '../src/diff.js';
@@ -11,7 +11,7 @@ const realFetch = globalThis.fetch;
 let aiScore = 55;
 
 test.before(async () => {
-  db = await openDb({ url: '' });
+  db = await freshDb();
   await seed(db);
   process.env.AI_SERVICE_URL = 'http://ai.test';
   // Stub only the AI service; everything else is real (Express + Postgres via PGlite).
@@ -137,7 +137,7 @@ test('analytics: override rate surfaces ambiguous rules', async () => {
 });
 
 test('Round 3 groundwork: second brand row exists, brand_assets table exists, upload stub is guarded and says 501', async () => {
-  const db = await openDb({ url: '' }); await seed(db);
+  const db = await freshDb(); await seed(db);
   assert.equal((await db.query(`SELECT count(*)::int n FROM brands WHERE id='northwind'`))[0].n, 1);
   assert.equal((await db.query(`SELECT count(*)::int n FROM brand_assets`))[0].n, 0);
   const app = createApp({ db }).listen(0); await new Promise((r) => app.once('listening', r));

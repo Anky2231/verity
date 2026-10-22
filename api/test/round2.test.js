@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
-import { openDb } from '../src/db.js';
+import { freshDb } from './helpers.js';
 import { seed } from '../src/seed.js';
 import { validateBig } from '../src/big.js';
 import { computeCalibration } from '../src/calibration.js';
@@ -14,7 +14,7 @@ const GOOD_BIG = { tone_profile: { descriptors: ['warm'] }, rules: [{ id: 'r_voi
 // Boots a fresh API + database with a scripted AI service.
 async function boot({ aiDown = false, env = {} } = {}) {
   Object.assign(process.env, { AI_SERVICE_URL: 'http://ai.test', ...env });
-  const db = await openDb({ url: '' }); await seed(db);
+  const db = await freshDb(); await seed(db);
   const seen = { review: 0, bodies: [] };
   const agent = (n) => ({ agent: n, status: 'ok', mode: 'rules', findings: [], latency_ms: 5, retries: 0 });
   const result = (text) => ({ text, score: 80, agents: ['claim', 'term', 'tone'].map(agent), timing: { first_agent_ms: 3, total_ms: 9 },
