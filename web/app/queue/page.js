@@ -4,6 +4,7 @@ import { api, explain } from '../../lib/api';
 import { useSession } from '../../lib/session';
 import { markProgress } from '../../lib/progress';
 import { ACTION_LABEL, STATUS_LABEL, TIPS, ago } from '../../lib/labels';
+import ReasonDialog from '../../components/ReasonDialog';
 
 const STATUSES = ['', 'draft', 'submitted', 'escalated', 'changes_requested', 'approved', 'published'];
 
@@ -12,6 +13,7 @@ export default function Queue() {
   const [rows, setRows] = useState(null);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const [reasonRequest, setReasonRequest] = useState(null);
   const staff = role && role !== 'creator';
 
   const refresh = useCallback(async () => {
@@ -21,15 +23,36 @@ export default function Queue() {
   useEffect(() => { if (token) refresh(); }, [token, refresh]);
 
   async function act(id, a) {
-    let reason;
-    if (a.reason) { reason = window.prompt('Reason (required)'); if (!reason?.trim()) return; }
+  const perform = async (reason) => {
     try {
-      await api(`/reviews/${id}/transition`, { token, method: 'POST', body: JSON.stringify({ action: a.action, reason }) });
-      if (['approve', 'escalate', 'reject'].includes(a.action)) markProgress('approve');
-      refresh();
-    } catch (e) { setError(explain(e)); }
-  }
+      await api(`/reviews/${id}/transition`, {
+        token,
+        method: 'POST',
+        body: JSON.stringify({ action: a.action, reason }),
+      });
 
+      setReasonRequest(null);
+
+      if (['approve', 'escalate', 'reject'].includes(a.action)) {
+        markProgress('approve');
+      }
+
+      await refresh();
+    } catch (e) {
+      setError(explain(e));
+    }
+  };
+
+  if (a.reason) {
+    setReasonRequest({
+      title: 'Reason required',
+      description: `Explain why you want to ${ACTION_LABEL[a.action] ?? a.action}.`,
+      onConfirm: perform,
+    });
+  } else {
+    await perform(undefined);
+  }
+}
   if (!ready) return null;
   if (!token) return <main className="doc"><p>Please <a href="/">choose a demo role</a> first.</p></main>;
 
@@ -70,6 +93,13 @@ export default function Queue() {
             </table>)}
       </div>
       {staff && <p className="muted">Compliance numbers are on the <a href="/dashboard">dashboard</a>.</p>}
+      <ReasonDialog
+  open={Boolean(reasonRequest)}
+  title={reasonRequest?.title}
+  description={reasonRequest?.description}
+  onConfirm={(reason) => reasonRequest?.onConfirm(reason)}
+  onCancel={() => setReasonRequest(null)}
+/>
     </main>
   );
 }

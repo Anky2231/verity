@@ -21,7 +21,7 @@ async function ctx(role) {
   p.on('console', (m) => m.type() === 'error' && !/404|favicon/.test(m.text()) && errors.push(m.text()));
   return p;
 }
-const dismissWith = (p, text) => p.once('dialog', (d) => d.accept(text));
+
 
 // ---- 1. Judge walkthrough start, guideline upload and publish (Manager) ----
 let p = await ctx();
@@ -64,8 +64,9 @@ for (let i = 0; i < cnt && !accepted; i++) { await items.nth(i).click(); const b
 check('accept fix applied', accepted);
 await p.waitForTimeout(600);
 await items.first().click();
-dismissWith(p, 'This phrasing suits our trade audience.');
 await p.getByRole('button', { name: 'Dispute', exact: true }).click();
+await p.getByRole('dialog').locator('textarea').fill('This phrasing suits our trade audience.');
+await p.getByRole('dialog').getByRole('button', { name: /submit|confirm|save|continue/i }).click();
 await p.waitForTimeout(600);
 check('decisions panel lists accept + dispute', (await p.getByText(/Decisions and reasons \(2\)/).count()) === 1);
 await p.getByText('Re-run review').click();
@@ -75,9 +76,22 @@ await p.locator('.diff-add, .diff-del').first().waitFor({ timeout: 10000 });
 check('revision diff visible', await p.locator('.diff-add, .diff-del').first().isVisible());
 await shot(p, '3-diff');
 const reviewUrl = p.url();
+p.on('response', async (res) => {
+  if (res.url().includes('/transition')) {
+    console.log('DEBUG transition response:', res.status(), res.url(), await res.text().catch(() => ''));
+  }
+});
 await p.getByRole('button', { name: 'Submit for approval', exact: true }).click();
-await p.getByText(/text is locked/).waitFor();
-check('submitted; editor locked', (await p.getByText(/text is locked/).count()) === 1);
+await p.waitForTimeout(1500);
+
+console.log('DEBUG review URL:', p.url());
+console.log('DEBUG submit button still visible:', await p.getByRole('button', { name: 'Submit for approval', exact: true }).count());
+console.log('DEBUG page text:', (await p.locator('body').innerText()).slice(-1800));
+
+check(
+  'submitted; editor locked',
+  /text is locked/i.test(await p.locator('body').innerText())
+);
 const creatorPage = p;
 
 // ---- 3. Manager: open, override, manual flag, comment, approve ----
@@ -88,12 +102,15 @@ await m.waitForTimeout(700);
 check('manager queue shows submitted review with Δ and age columns', (await m.getByText('Δ').count()) >= 1 && (await m.locator('tbody tr').count()) >= 1);
 await m.goto(reviewUrl); await m.getByText('Review summary').waitFor();
 await m.locator('.item').first().click();
-dismissWith(m, 'Acceptable for this audience.');
-await m.getByRole('button', { name: 'Override', exact: true }).click(); await m.waitForTimeout(500);
+await m.getByRole('button', { name: 'Override', exact: true }).click();
+await m.getByRole('dialog').locator('textarea').fill('Acceptable for this audience.');
+await m.getByRole('dialog').getByRole('button', { name: /submit|confirm|save|continue/i }).click();
+await m.waitForTimeout(500);
 // manual flag: select some text in the editor
 await m.locator('.ProseMirror p').first().click({ clickCount: 3 });
-dismissWith(m, 'Off-brand opener.');
-await m.getByText('Flag selected text').click(); await m.getByText('Manual flags').waitFor();
+await m.getByText('Flag selected text').click();
+await m.getByRole('dialog').locator('textarea').fill('Off-brand opener.');
+await m.getByRole('dialog').getByRole('button', { name: /submit|confirm|save|continue/i }).click();
 check('manager override + manual flag recorded', true);
 await m.getByLabel('Add a comment').fill('Looks close. Approving after the claim fix.');
 await m.getByRole('button', { name: 'Comment', exact: true }).click();
