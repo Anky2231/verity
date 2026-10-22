@@ -1,0 +1,61 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: api } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci || npm install
+      - run: npm test
+      - run: npm audit --audit-level=high
+        continue-on-error: true
+  web:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci || npm install
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --audit-level=high
+        continue-on-error: true
+  ai:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: ai } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q
+      - run: python scripts/eval.py
+      - run: pip install pip-audit && pip-audit -r requirements.txt
+        continue-on-error: true
+  e2e:
+    needs: [api, web, ai]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -r ai/requirements.txt
+      - run: cd api && (npm ci || npm install)
+      - run: cd web && (npm ci || npm install) && npm run build
+      - name: Start the stack
+        run: |
+          (cd ai && python -m uvicorn app.main:app --port 8000 &)
+          (cd api && PORT=4000 WEB_ORIGIN=http://127.0.0.1:3000 AI_SERVICE_URL=http://127.0.0.1:8000 node src/index.js &)
+          (cd web && NEXT_PUBLIC_API_URL=http://127.0.0.1:4000 npx next start -p 3000 &)
+          for url in http://127.0.0.1:8000/health http://127.0.0.1:4000/health http://127.0.0.1:3000; do
+            for i in $(seq 1 60); do curl -sf "$url" >/dev/null && break; sleep 1; done
+          done
+      - name: Browser journey (uses the runner's Chrome)
+        run: cd web && npm run e2e

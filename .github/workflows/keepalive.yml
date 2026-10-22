@@ -1,0 +1,14 @@
+# Pings the deployed services so a free/sleeping plan does not cold-start in front of a judge.
+# Set repository variables WEB_URL and API_URL after deploying.
+name: keepalive
+on:
+  schedule: [{ cron: '*/10 * * * *' }]
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for url in "${{ vars.WEB_URL }}" "${{ vars.API_URL }}/health/deep"; do
+            [ -n "$url" ] && curl -fsS --max-time 30 "$url" -o /dev/null && echo "ok $url" || echo "skipped or failed $url"
+          done
