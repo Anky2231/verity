@@ -8,7 +8,8 @@ People make the final call: a Creator → Manager → Approver workflow with a t
 Nothing is published automatically.
 
 **Try it:** open the live link and click **Start judge walkthrough**. No signup. A guided bar at the bottom walks through five steps.
-Works on desktop and phone widths. *(Live URL: add after deployment.)*
+Works on desktop and phone widths. **Live:** https://verity-two-delta.vercel.app  ·  API health: https://verity-api-f0xo.onrender.com/health/deep
+(Free hosting: the first visit after a quiet period can take up to a minute to wake the API.)
 
 ## What you can do
 | Role | Flow |
