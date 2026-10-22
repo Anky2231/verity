@@ -8,7 +8,9 @@
     "e2e": "node e2e/journey.mjs",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test test/spanMap.test.mjs"
+    "test": "node --test test/spanMap.test.mjs",
+    "a11y": "node e2e/a11y.mjs",
+    "keyboard": "node e2e/keyboard.mjs"
   },
   "dependencies": {
     "@tiptap/core": "^2.27.3",
@@ -20,6 +22,7 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "axe-core": "^4.14.0",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.15",
     "playwright-core": "^1.64.1"
