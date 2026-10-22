@@ -3,13 +3,37 @@ on: [push, pull_request]
 jobs:
   api:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults: { run: { working-directory: api } }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -r ai/requirements.txt
+        working-directory: .
+      - name: Start AI service for Redis queue integration tests
+        run: |
+          cd ai
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8000/health >/dev/null && break; sleep 1; done
+        working-directory: .
       - run: npm ci || npm install
       - run: npm test
+      - name: Run Redis queue integration tests
+        run: npm test
+        env:
+          REDIS_URL: redis://127.0.0.1:6379
+          AI_SERVICE_URL: http://127.0.0.1:8000
       - run: npm audit --audit-level=high
         continue-on-error: true
   web:
@@ -40,6 +64,15 @@ jobs:
   e2e:
     needs: [api, web, ai]
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,13 +82,32 @@ jobs:
       - run: pip install -r ai/requirements.txt
       - run: cd api && (npm ci || npm install)
       - run: cd web && (npm ci || npm install) && npm run build
-      - name: Start the stack
+      - name: Run browser journey with and without Redis
         run: |
-          (cd ai && python -m uvicorn app.main:app --port 8000 &)
-          (cd api && PORT=4000 WEB_ORIGIN=http://127.0.0.1:3000 AI_SERVICE_URL=http://127.0.0.1:8000 node src/index.js &)
-          (cd web && NEXT_PUBLIC_API_URL=http://127.0.0.1:4000 npx next start -p 3000 &)
-          for url in http://127.0.0.1:8000/health http://127.0.0.1:4000/health http://127.0.0.1:3000; do
-            for i in $(seq 1 60); do curl -sf "$url" >/dev/null && break; sleep 1; done
-          done
-      - name: Browser journey (uses the runner's Chrome)
-        run: cd web && npm run e2e
+          set -e
+          (cd ai && python -m uvicorn app.main:app --host 127.0.0.1 --port 8000) &
+          AI_PID=$!
+          (cd api && PORT=4000 WEB_ORIGIN=http://127.0.0.1:3000 AI_SERVICE_URL=http://127.0.0.1:8000 node src/index.js) &
+          API_PID=$!
+          (cd web && NEXT_PUBLIC_API_URL=http://127.0.0.1:4000 npx next start -p 3000) &
+          WEB_PID=$!
+          wait_url() {
+            for i in $(seq 1 60); do
+              if curl -sf "$1" >/dev/null; then return 0; fi
+              sleep 1
+            done
+            echo "Timed out waiting for $1"
+            exit 1
+          }
+          wait_url http://127.0.0.1:8000/health
+          wait_url http://127.0.0.1:4000/health
+          wait_url http://127.0.0.1:3000
+          cd web && npm run e2e
+          cd ..
+          kill "$API_PID"
+          wait "$API_PID" || true
+          (cd api && PORT=4000 WEB_ORIGIN=http://127.0.0.1:3000 AI_SERVICE_URL=http://127.0.0.1:8000 REDIS_URL=redis://127.0.0.1:6379 node src/index.js) &
+          API_PID=$!
+          wait_url http://127.0.0.1:4000/health
+          cd web && npm run e2e
+          kill "$API_PID" "$WEB_PID" "$AI_PID" || true

@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Header, HTTPException
 from .models import ReviewRequest, AgentResult
-from .pipeline import review as run_review
+from .pipeline import AGENTS, _run_agent, merge_results, review as run_review
 import asyncio, base64, json
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -23,12 +23,29 @@ def health():
 
 
 @app.post("/review/{agent}", response_model=AgentResult)
-def review(agent: str, req: ReviewRequest, x_service_token: str | None = Header(default=None)):
-    """Stub: real agents (tone/term/claim) plug in here. Returns the final contract shape."""
+async def review(agent: str, req: ReviewRequest, x_service_token: str | None = Header(default=None)):
+    """Run one review agent, preserving the same isolation and result contract as the pipeline."""
     _auth(x_service_token)
-    if agent not in {"tone", "term", "claim"}:
+    if agent not in AGENTS:
         raise HTTPException(404, "unknown agent")
-    return AgentResult(agent=agent, status="ok", findings=[])
+    return await _run_agent(agent, getattr(AGENTS[agent], "run"), req.text, req.big or SAMPLE_BIG)
+
+
+class MergeRequest(BaseModel):
+    text: str
+    agents: list[AgentResult]
+    calibration: dict[str, float] = {}
+    timing: dict = {"first_agent_ms": None, "total_ms": 0}
+
+
+@app.post("/merge")
+def merge(req: MergeRequest, x_service_token: str | None = Header(default=None)):
+    """Merge the independent agent outputs using the pipeline's canonical MetaAgent logic."""
+    _auth(x_service_token)
+    names = [result.agent for result in req.agents]
+    if set(names) != set(AGENTS) or len(names) != len(AGENTS):
+        raise HTTPException(422, "exactly one result for each review agent is required")
+    return merge_results(req.text, req.agents, req.calibration, req.timing)
 
 
 @app.get("/sample")

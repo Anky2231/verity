@@ -6,6 +6,7 @@ import { governanceRouter } from './routes/governance.js';
 import { brandRouter } from './routes/brand.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { signToken, requireAuth, requireRole } from './auth.js';
+import { createReviewQueue } from './queue.js';
 
 export function createApp({ db } = {}) {
   const app = express();
@@ -72,7 +73,8 @@ export function createApp({ db } = {}) {
   });
 
   if (db) {
-    app.use('/reviews', reviewsRouter({ db, aiFetch, aiStream }));
+    const reviewQueue = process.env.REDIS_URL ? createReviewQueue({ aiFetch }) : null;
+    app.use('/reviews', reviewsRouter({ db, aiFetch, aiStream, reviewQueue }));
     app.use('/brand', brandRouter({ db, aiFetch }));
     app.use('/notifications', notificationsRouter({ db }));
     app.use('/', governanceRouter({ db }));

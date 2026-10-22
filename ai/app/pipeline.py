@@ -7,6 +7,7 @@ from .agents import term, claim, tone
 from . import meta
 
 AGENT_TIMEOUT_S = 45
+AGENTS = {"tone": tone, "term": term, "claim": claim}
 
 
 async def _run_agent(name: str, fn, text: str, big: dict) -> AgentResult:
@@ -27,8 +28,7 @@ async def review(text: str, big: dict, on_agent_done=None, calibration: dict | N
     t_start = time.perf_counter()
     cut = calibration or {}
     text = normalise(text)
-    agents = {"tone": tone.run, "term": term.run, "claim": claim.run}
-    tasks = [asyncio.create_task(_run_agent(n, f, text, big)) for n, f in agents.items()]
+    tasks = [asyncio.create_task(_run_agent(n, getattr(module, "run"), text, big)) for n, module in AGENTS.items()]
     results: list[AgentResult] = []
     first_ms = None
     for coro in asyncio.as_completed(tasks):
@@ -37,11 +37,20 @@ async def review(text: str, big: dict, on_agent_done=None, calibration: dict | N
         first_ms = first_ms if first_ms is not None else int((time.perf_counter() - t_start) * 1000)
         if on_agent_done:  # hook for streaming partial results (Socket.IO/SSE) later
             await on_agent_done(r)
+    return merge_results(text, results, cut,
+        {"first_agent_ms": first_ms, "total_ms": int((time.perf_counter() - t_start) * 1000)})
+
+
+def merge_results(text: str, results: list[AgentResult], calibration: dict | None = None,
+                  timing: dict | None = None) -> dict:
+    """Build the canonical review response from completed agent results."""
+    cut = calibration or {}
+    text = normalise(text)
     all_findings: list[Finding] = [f for r in results for f in r.findings]
     for f in all_findings:  # low confidence (or a rule reviewers keep overriding) -> suggestion, not violation
         f.kind = "suggestion" if f.confidence < cut.get(f.rule_id, 0.6) else "violation"
     highlights = meta.merge(all_findings)
     sc = meta.score(all_findings, calibration=cut)
-    return {"timing": {"first_agent_ms": first_ms, "total_ms": int((time.perf_counter() - t_start) * 1000)},
+    return {"timing": timing or {"first_agent_ms": None, "total_ms": 0},
             "calibration": cut, "text": text, "score": sc, "summary": meta.summary(highlights, sc), "highlights": highlights,
             "agents": [r.model_dump() for r in sorted(results, key=lambda r: r.agent)]}
