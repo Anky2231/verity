@@ -1,0 +1,2 @@
+# only needed to regenerate the sample guideline files (scripts/make_sample_guidelines.py)
+fpdf2>=2.8
