@@ -24,8 +24,8 @@ const MVP = [
     'Every AI run is an immutable revision with a word-level diff and compliance delta in the review page. The audit log is append-only and hash-chained; the database rejects edits and deletes, and the chain can be verified, filtered and exported as CSV or JSON.',
     'api/src/audit.js · api/src/diff.js · /audit page'],
   ['ClaimGuard agent', 'Simplified',
-    'Detects claim-like sentences and checks them against the approved claims register by token overlap, citing claim id, source document and page. "No supporting claim" is reported as its own outcome. pgvector retrieval is not built.',
-    'ai/app/agents/claim.py'],
+    'Detects claim-like sentences and ranks them against the approved claims register (BM25, IDF-weighted coverage, typo-tolerant, with a number-conflict check), citing claim id, source document and page. "No supporting claim" is reported as its own outcome. On 30 annotated texts: precision 0.90, recall 1.00 (0.83 / 0.56 before this upgrade). Embedding retrieval (pgvector) is not built.',
+    'ai/app/retrieval.py · ai/app/agents/claim.py · ai/tests/test_claim_retrieval.py · ai/scripts/eval.py'],
   ['Compliance analytics dashboard', 'Done',
     'Reviews in the last 30 days, average score, average time to approve, AI versus human flags, score trend, violations by agent, content type and creator, and the clauses reviewers keep overriding with their confidence cutoffs. 40 seeded reviews keep it populated.',
     'api/src/routes/governance.js (/analytics/summary) · /dashboard page'],
@@ -45,7 +45,7 @@ const NAMED = [
 
 const DEVIATIONS = [
   ['MongoDB', 'PostgreSQL JSONB', 'One database fewer to deploy; findings and revisions are JSON anyway.'],
-  ['Pinecone', 'Not used yet; ClaimGuard matches by token overlap', 'No external account. Vector retrieval in the same Postgres (pgvector) is planned.'],
+  ['Pinecone', 'Not used; ClaimGuard uses lexical retrieval (BM25 + weighted coverage)', 'No external account. Embedding retrieval in the same Postgres (pgvector) is planned and fits behind the same interface.'],
   ['AWS S3', 'Deferred to Round 3 with VisualGuard', 'Images only matter once VisualGuard exists.'],
   ['Clerk', 'Own JWT auth with seeded demo users', 'Judges can try every role in one click, with no signup. The role model is unchanged.'],
   ['Liveblocks', 'Dropped', 'Not part of the core review workflow.'],

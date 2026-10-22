@@ -53,7 +53,7 @@ More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 |---|---|---|
 | ToneGuard | Voice and tone against the brand's tone rules | LLM with schema-validated structured output and up to 3 repair retries. The live demo runs a deterministic **basic mode** (see below) |
 | TermGuard | Banned and approved terminology | Deterministic glossary match |
-| ClaimGuard | Unsupported product claims | Finds claim-like sentences, checks them against the approved claims register, cites claim id, source document and page. "No supporting claim" is a distinct, explained outcome |
+| ClaimGuard | Unsupported product claims | Finds claim-like sentences, then ranks them against the approved claims register (BM25, IDF-weighted coverage, typo-tolerant matching) and cites claim id, source document and page. A wrong number ("24 hours" vs the approved "48 hours") is flagged as a conflict even when the words match. "No supporting claim" is a distinct, explained outcome |
 | MetaAgent | One clean result | Merges overlapping spans, ranks by severity and confidence, computes the 0–100 score, and tags low-confidence findings as suggestions |
 
 Reliability built in: span verification (the server checks `text[start:end] == quoted_text`, re-locates or drops mismatches), one agent failing never blocks the others, a result cache keyed by content + guideline version, rate limiting, and a labelled precomputed result for the sample content if the AI service is unreachable. Other content is never faked.
@@ -88,10 +88,10 @@ Open http://localhost:3000. No Docker is needed locally; set `DATABASE_URL` to u
 ## Tests and evaluation
 ```bash
 cd api && npm test            # 22 tests: RBAC, state machine, audit chain, BIG publish, cache, rate limit, streaming, fallback, learning loop, notifications
-cd ai  && .venv/bin/python -m pytest -q     # 24 tests: spans (unicode, repeats), merge, retries, extraction (real PDF/DOCX), streaming, calibration, prompt injection
+cd ai  && .venv/bin/python -m pytest -q     # 32 tests: spans (unicode, repeats), merge, retries, extraction (real PDF/DOCX), streaming, calibration, prompt injection
 cd web && npm test && npm run lint          # span-mapping tests + lint
 cd web && npm run e2e         # 34 browser checks of the full journey on a running stack (needs Chrome)
-cd ai  && .venv/bin/python scripts/eval.py  # precision / recall on 22 annotated texts
+cd ai  && .venv/bin/python scripts/eval.py  # precision / recall on 30 annotated texts
 ```
 CI runs all of these plus `npm audit` and `pip-audit` ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
@@ -99,7 +99,7 @@ CI runs all of these plus `npm audit` and `pip-audit` ([.github/workflows/ci.yml
 | Agent | Precision | Recall | Notes |
 |---|---|---|---|
 | TermGuard | 1.00 | 1.00 | Deterministic; the set is small and written from the glossary, so treat this as a regression check |
-| ClaimGuard | 0.75 | 0.75 | 3 true positives, 1 false positive, 1 miss |
+| ClaimGuard | 0.90 | 1.00 | 9 true positives, 1 false positive ("best-in-class" counted as a claim), 0 misses. Before the retrieval upgrade on the same 30 texts: precision 0.83, recall 0.56 |
 | ToneGuard (basic mode) | 1.00 | 0.90 | Misses tone problems outside its word lists |
 
 **Latency (rules mode, 1,032-word draft, 10 runs):** first agent result 1 ms median (3 ms max), full review 2 ms median (3 ms max). LLM-mode latency has not been measured yet; the targets are a first result under 10 s and a full review under 60 s.
@@ -109,7 +109,7 @@ ToneGuard is built to call an LLM. The live deployment runs it in **basic mode**
 Switching needs only `ANTHROPIC_API_KEY` and `MODEL_FAST`; `ai/scripts/check_tone.py` verifies the live path.
 
 ## Deviations from Round 1 and known limitations
-See the in-app page **/about** for the row-by-row table. In short: PostgreSQL JSONB replaces MongoDB; guideline extraction is rule-based rather than LLM-based; ClaimGuard uses token overlap rather than pgvector retrieval; agents run in-process (asyncio) rather than through BullMQ and Redis, with streaming over server-sent events instead of Socket.IO; seeded demo logins replace Clerk; Liveblocks is dropped; AWS S3 waits for VisualGuard.
+See the in-app page **/about** for the row-by-row table. In short: PostgreSQL JSONB replaces MongoDB; guideline extraction is rule-based rather than LLM-based; ClaimGuard uses lexical retrieval (BM25 plus weighted coverage) rather than embeddings in pgvector; agents run in-process (asyncio) rather than through BullMQ and Redis, with streaming over server-sent events instead of Socket.IO; seeded demo logins replace Clerk; Liveblocks is dropped; AWS S3 waits for VisualGuard.
 Also: scanned (image-only) PDFs are not read; the review cache and rate limiter are per API process; the tone profile has no embeddings yet; email is built but off unless `SMTP_URL` is set.
 
 ## Round 3 roadmap
