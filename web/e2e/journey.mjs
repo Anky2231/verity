@@ -22,7 +22,6 @@ async function ctx(role) {
   return p;
 }
 
-
 // ---- 1. Judge walkthrough start, guideline upload and publish (Manager) ----
 let p = await ctx();
 await p.goto(WEB + '/');
@@ -64,9 +63,20 @@ for (let i = 0; i < cnt && !accepted; i++) { await items.nth(i).click(); const b
 check('accept fix applied', accepted);
 await p.waitForTimeout(600);
 await items.first().click();
-await p.getByRole('button', { name: 'Dispute', exact: true }).click();
+const disputeBtn = p.getByRole('button', { name: 'Dispute', exact: true });
+await disputeBtn.click();
+const dlg = p.getByRole('dialog');
+await dlg.waitFor();
+const focused = await p.waitForFunction(() => document.activeElement?.id === 'reason-dialog-input', null, { timeout: 3000 }).then(() => true, () => false);
+check('reason dialog opens with focus in the text box', focused);
+await dlg.getByRole('button', { name: 'Continue' }).click();
+check('empty reason shows an error and keeps the dialog open', (await dlg.getByRole('alert').count()) === 1 && await dlg.isVisible());
+await p.keyboard.press('Escape');
+await dlg.waitFor({ state: 'hidden' });
+check('Escape closes the dialog and returns focus to the trigger', await disputeBtn.evaluate((el) => el === document.activeElement));
+await disputeBtn.click();
 await p.getByRole('dialog').locator('textarea').fill('This phrasing suits our trade audience.');
-await p.getByRole('dialog').getByRole('button', { name: /submit|confirm|save|continue/i }).click();
+await p.getByRole('dialog').getByRole('button', { name: 'Continue' }).click();
 await p.waitForTimeout(600);
 check('decisions panel lists accept + dispute', (await p.getByText(/Decisions and reasons \(2\)/).count()) === 1);
 await p.getByText('Re-run review').click();
@@ -76,22 +86,9 @@ await p.locator('.diff-add, .diff-del').first().waitFor({ timeout: 10000 });
 check('revision diff visible', await p.locator('.diff-add, .diff-del').first().isVisible());
 await shot(p, '3-diff');
 const reviewUrl = p.url();
-p.on('response', async (res) => {
-  if (res.url().includes('/transition')) {
-    console.log('DEBUG transition response:', res.status(), res.url(), await res.text().catch(() => ''));
-  }
-});
 await p.getByRole('button', { name: 'Submit for approval', exact: true }).click();
-await p.waitForTimeout(1500);
-
-console.log('DEBUG review URL:', p.url());
-console.log('DEBUG submit button still visible:', await p.getByRole('button', { name: 'Submit for approval', exact: true }).count());
-console.log('DEBUG page text:', (await p.locator('body').innerText()).slice(-1800));
-
-check(
-  'submitted; editor locked',
-  /text is locked/i.test(await p.locator('body').innerText())
-);
+await p.getByText(/text is locked/).waitFor({ timeout: 15000 });
+check('submitted; editor locked', (await p.getByText(/text is locked/).count()) === 1);
 const creatorPage = p;
 
 // ---- 3. Manager: open, override, manual flag, comment, approve ----
@@ -104,13 +101,13 @@ await m.goto(reviewUrl); await m.getByText('Review summary').waitFor();
 await m.locator('.item').first().click();
 await m.getByRole('button', { name: 'Override', exact: true }).click();
 await m.getByRole('dialog').locator('textarea').fill('Acceptable for this audience.');
-await m.getByRole('dialog').getByRole('button', { name: /submit|confirm|save|continue/i }).click();
+await m.getByRole('dialog').getByRole('button', { name: 'Continue' }).click();
 await m.waitForTimeout(500);
 // manual flag: select some text in the editor
 await m.locator('.ProseMirror p').first().click({ clickCount: 3 });
 await m.getByText('Flag selected text').click();
 await m.getByRole('dialog').locator('textarea').fill('Off-brand opener.');
-await m.getByRole('dialog').getByRole('button', { name: /submit|confirm|save|continue/i }).click();
+await m.getByRole('dialog').getByRole('button', { name: 'Continue' }).click();
 check('manager override + manual flag recorded', true);
 await m.getByLabel('Add a comment').fill('Looks close. Approving after the claim fix.');
 await m.getByRole('button', { name: 'Comment', exact: true }).click();
@@ -135,7 +132,6 @@ await m.locator('tbody tr').first().getByRole('button', { name: 'Escalate to app
 const a = await ctx(); await a.goto(WEB + '/'); await a.getByText('Anita · Approver').click(); await a.waitForURL('**/queue');
 await a.locator('select[aria-label="Status filter"]').selectOption('escalated'); await a.waitForTimeout(600);
 const before = await a.locator('tbody tr').count();
-dismissWith(a, 'unused');
 await a.locator('tbody tr').first().getByRole('button', { name: 'Final approve', exact: true }).click(); await a.waitForTimeout(700);
 check('approver final-approves an escalated review', (await a.locator('tbody tr').count()) === before - 1);
 
