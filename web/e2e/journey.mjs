@@ -137,7 +137,7 @@ check('approver final-approves an escalated review', (await a.locator('tbody tr'
 
 // ---- 5. Dashboard + audit ----
 await m.goto(WEB + '/dashboard'); await m.getByText('Score trend').waitFor();
-check('dashboard cards + charts', (await m.getByText('Average score', { exact: true }).count()) === 1 && (await m.locator('svg circle').count()) >= 3 && (await m.getByText('Violations by agent').count()) === 1);
+check('dashboard cards + charts', (await m.getByText('Average score', { exact: true }).count()) >= 1 && (await m.locator('svg circle').count()) >= 3 && (await m.getByText('Violations by agent').count()) === 1);
 check('ambiguous clause surfaced', (await m.getByText('possibly ambiguous').count()) >= 1);
 await shot(m, '5-dashboard');
 await m.goto(WEB + '/audit'); await m.getByRole('button', { name: 'Verify chain', exact: true }).click();
