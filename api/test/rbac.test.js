@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
 
+process.env.REDIS_URL = '';
+
 let server, base;
 test.before(async () => {
   server = createApp().listen(0);

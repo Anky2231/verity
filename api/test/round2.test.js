@@ -13,7 +13,7 @@ const GOOD_BIG = { tone_profile: { descriptors: ['warm'] }, rules: [{ id: 'r_voi
 
 // Boots a fresh API + database with a scripted AI service.
 async function boot({ aiDown = false, env = {} } = {}) {
-  Object.assign(process.env, { AI_SERVICE_URL: 'http://ai.test', ...env });
+  Object.assign(process.env, { AI_SERVICE_URL: 'http://ai.test', REDIS_URL: '', ...env });
   const db = await openDb({ url: '' }); await seed(db);
   const seen = { review: 0, bodies: [] };
   const agent = (n) => ({ agent: n, status: 'ok', mode: 'rules', findings: [], latency_ms: 5, retries: 0 });

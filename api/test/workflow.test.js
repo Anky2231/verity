@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
 import { openDb } from '../src/db.js';
+
+// These tests exercise the default in-process API path; queue coverage lives in queue.test.js.
+process.env.REDIS_URL = '';
 import { seed } from '../src/seed.js';
 import { decide } from '../src/workflow.js';
 import { wordDiff } from '../src/diff.js';
