@@ -16,7 +16,7 @@ const BRAND = 'lumina'; // single brand in Round 2; every query is already brand
 const MAX_TEXT = 20000;
 const flagCount = (result) => (result?.highlights ?? []).reduce((n, h) => n + h.findings.length, 0);
 
-export function reviewsRouter({ db, aiFetch, aiStream }) {
+export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
   const r = Router();
   const cache = new LruCache(200);
   const limit = rateLimiter(Number(process.env.RUN_LIMIT_PER_MIN || 20), 60000);
@@ -82,7 +82,9 @@ export function reviewsRouter({ db, aiFetch, aiStream }) {
       text, big: big.data, calibration: calibration.cutoffs };
     try {
       let result;
-      if (emit) {
+      if (reviewQueue) {
+        result = await reviewQueue.run(body, emit);
+      } else if (emit) {
         const res = await aiStream('/stream/review', body);
         let buf = '';
         for await (const chunk of res.body) {

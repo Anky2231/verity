@@ -31,6 +31,7 @@ flowchart LR
     A[JWT auth + RBAC<br/>workflow state machine<br/>cache, rate limit, SSE]
     DB[(PostgreSQL<br/>JSONB findings, brand_id everywhere<br/>hash-chained audit log)]
   end
+  R[(Optional Redis + BullMQ)]
   subgraph AI[FastAPI AI service]
     P[Pipeline: agents run in parallel<br/>per-agent timeout and isolation]
     T[ToneGuard]:::a
@@ -41,7 +42,9 @@ flowchart LR
   end
   W -- REST + SSE --> A
   A --- DB
-  A -- review, stream, extract --> P
+  A -- no REDIS_URL: review, stream, extract --> P
+  A -- REDIS_URL set: three agent jobs --> R
+  R -- /review/{agent} and /merge --> P
   P --> T & M & C --> X
   A -- extract --> E
   classDef a fill:#eef,stroke:#88a
@@ -81,14 +84,15 @@ Open http://localhost:3000. No Docker is needed locally; set `DATABASE_URL` to u
 | `DATABASE_URL` (`PGSSL=1` if needed) | api | PostgreSQL. Unset = in-memory PGlite (data lost on restart) |
 | `SEED_HISTORY=off` | api | Skip the 40 demo reviews |
 | `RUN_LIMIT_PER_MIN` | api | Review runs per user per minute (default 20) |
+| `REDIS_URL` | api | Optional BullMQ queue for parallel agent jobs. Unset keeps the direct AI pipeline path |
 | `SMTP_URL`, `MAIL_FROM` | api | Optional: real email. Without it, notifications are in-app only |
 | `ANTHROPIC_API_KEY`, `MODEL_FAST` | ai | Optional: switches ToneGuard from basic mode to the LLM |
 | `NEXT_PUBLIC_API_URL` | web | API base URL |
 
 ## Tests and evaluation
 ```bash
-cd api && npm test            # 22 tests: RBAC, state machine, audit chain, BIG publish, cache, rate limit, streaming, fallback, learning loop, notifications
-cd ai  && .venv/bin/python -m pytest -q     # 32 tests: spans (unicode, repeats), merge, retries, extraction (real PDF/DOCX), streaming, calibration, prompt injection
+cd api && npm test            # 22 default-path tests + 3 Redis queue integration tests (skipped without REDIS_URL)
+cd ai  && .venv/bin/python -m pytest -q     # 35 tests: spans (unicode, repeats), merge, retries, extraction (real PDF/DOCX), streaming, calibration, prompt injection
 cd web && npm test && npm run lint          # span-mapping tests + lint
 cd web && npm run e2e         # 34 browser checks of the full journey on a running stack (needs Chrome)
 cd ai  && .venv/bin/python scripts/eval.py  # precision / recall on 30 annotated texts
@@ -102,15 +106,15 @@ CI runs all of these plus `npm audit` and `pip-audit` ([.github/workflows/ci.yml
 | ClaimGuard | 0.90 | 1.00 | 9 true positives, 1 false positive ("best-in-class" counted as a claim), 0 misses. Before the retrieval upgrade on the same 30 texts: precision 0.83, recall 0.56 |
 | ToneGuard (basic mode) | 1.00 | 0.90 | Misses tone problems outside its word lists |
 
-**Latency (rules mode, 1,032-word draft, 10 runs):** first agent result 1 ms median (3 ms max), full review 2 ms median (3 ms max). LLM-mode latency has not been measured yet; the targets are a first result under 10 s and a full review under 60 s.
+**Latency (rules mode, 1,032-word draft, 10 runs):** first agent result 1 ms median (3 ms max), full review 2 ms median (3 ms max). LLM-mode latency has not been measured yet; the targets are a first result under 10 s and a full review under 60 s. **Queue overhead (same 1,032-word size, built-in sample cycled to length, local AI + Redis 8.2.10 on Windows, 10 runs):** direct AI endpoint 165.5 ms median; BullMQ path 197.1 ms; added median latency 31.5 ms. Reproduce with `cd api && npm run benchmark:queue` while Redis and the AI service are running.
 
 ## ToneGuard modes (disclosed deviation from the Round 1 plan)
 ToneGuard is built to call an LLM. The live deployment runs it in **basic mode**, a deterministic rule set for jargon, hype words and exclamation marks, so the demo costs nothing and cannot hit rate limits. Every result is labelled "basic mode" in the UI and in the audit record (`agents[].mode = "fallback"`).
 Switching needs only `ANTHROPIC_API_KEY` and `MODEL_FAST`; `ai/scripts/check_tone.py` verifies the live path.
 
 ## Deviations from Round 1 and known limitations
-See the in-app page **/about** for the row-by-row table. In short: PostgreSQL JSONB replaces MongoDB; guideline extraction is rule-based rather than LLM-based; ClaimGuard uses lexical retrieval (BM25 plus weighted coverage) rather than embeddings in pgvector; agents run in-process (asyncio) rather than through BullMQ and Redis, with streaming over server-sent events instead of Socket.IO; seeded demo logins replace Clerk; Liveblocks is dropped; AWS S3 waits for VisualGuard.
-Also: scanned (image-only) PDFs are not read; the review cache and rate limiter are per API process; the tone profile has no embeddings yet; email is built but off unless `SMTP_URL` is set.
+See the in-app page **/about** for the row-by-row table. In short: PostgreSQL JSONB replaces MongoDB; guideline extraction is rule-based rather than LLM-based; ClaimGuard uses lexical retrieval (BM25 plus weighted coverage) rather than embeddings in pgvector; the review runs in-process by default (asyncio), with optional BullMQ and Redis jobs when REDIS_URL is set; streaming uses server-sent events instead of Socket.IO; seeded demo logins replace Clerk; Liveblocks is dropped; AWS S3 waits for VisualGuard.
+Also: scanned (image-only) PDFs are not read; the review cache and rate limiter are per API process; the tone profile has no embeddings yet; email is built but off unless `SMTP_URL` is set. The BullMQ path is optional and only active when `REDIS_URL` is set; the direct pipeline remains the default and supports the live demo without Redis.
 
 ## Round 3 roadmap
 VisualGuard, multi-brand workspaces and Brand Drift Intelligence, with design, data model and acceptance tests, on the in-app page **/roadmap**. Groundwork already in the repo: the `brand_assets` table, a guarded upload route that answers 501, a `region` field on findings, `brand_id` on every table, and a second brand row.
@@ -121,13 +125,14 @@ VisualGuard, multi-brand workspaces and Brand Drift Intelligence, with design, d
 - **Demo data.** "Lumina Coffee Co." and every review, user and claim are fictional.
 
 ## Team
-| Name | Role in Round 1 |
-|---|---|
-| Swastik Sahu | Full-Stack Lead & AI/ML Engineer |
-| Akriti Tigga | Backend Engineer |
-| Gayathri VS | Frontend Engineer & UI/UX Designer |
-| Sakshi Kumari | AI / ML Engineer |
-| Shivam Agarwal | Backend Engineer & DevOps |
+| Name | Role in Round 1 | Round 2 contribution |
+|---|---|---|
+| Swastik Sahu | Full-Stack Lead & AI/ML Engineer | |
+| Akriti Tigga | Backend Engineer | |
+| Gayathri VS | Frontend Engineer & UI/UX Designer | |
+| Sakshi Kumari | AI / ML Engineer | |
+| Shivam Agarwal | Backend Engineer & DevOps | Optional BullMQ and Redis review-agent jobs, AI endpoints, queue tests and documentation |
+
 
 *(Add each member's Round 2 contribution here before submitting.)*
 

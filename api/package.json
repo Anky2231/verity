@@ -6,15 +6,19 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "test": "node --test test/rbac.test.js test/workflow.test.js test/round2.test.js"
+    "test": "node --test test/rbac.test.js test/workflow.test.js test/round2.test.js test/queue.test.js",
+    "test:queue": "node --test test/queue.test.js",
+    "benchmark:queue": "node scripts/benchmark-queue.js"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.11",
+    "bullmq": "^6.4.0",
     "cors": "^2.8.5",
     "express": "^4.21.0",
+    "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^10.2.0",
     "pg": "^8.23.1"
