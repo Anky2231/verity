@@ -6,6 +6,7 @@ import asyncio, base64, json
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from .extract import extract_big, read_text
+from .spans import normalise
 from .sample_brand import SAMPLE_BIG, SAMPLE_CONTENT, SAMPLES, SAMPLE_GUIDELINE_TEXT
 
 app = FastAPI(title="Verity AI service")
@@ -28,7 +29,8 @@ async def review(agent: str, req: ReviewRequest, x_service_token: str | None = H
     _auth(x_service_token)
     if agent not in AGENTS:
         raise HTTPException(404, "unknown agent")
-    return await _run_agent(agent, getattr(AGENTS[agent], "run"), req.text, req.big or SAMPLE_BIG)
+    # Normalise exactly as pipeline.review() does, so offsets match the text /merge returns.
+    return await _run_agent(agent, getattr(AGENTS[agent], "run"), normalise(req.text), req.big or SAMPLE_BIG)
 
 
 class MergeRequest(BaseModel):
