@@ -212,5 +212,70 @@
   "id": 22,
   "text": "Honestly, it is just a really good cup of coffee that we hope you love.",
   "expected": []
+ },
+ {
+  "id": 23,
+  "text": "We roast in small batches and ship within 48 hours of an order.",
+  "expected": []
+ },
+ {
+  "id": 24,
+  "text": "All packaging is 100% compostible.",
+  "expected": []
+ },
+ {
+  "id": 25,
+  "text": "100% of our packaging is compostable.",
+  "expected": []
+ },
+ {
+  "id": 26,
+  "text": "Roasted in small batches within 24 hours of shipping.",
+  "expected": [
+   {
+    "agent": "claim",
+    "quote": "Roasted in small batches within 24 hours of shipping"
+   }
+  ]
+ },
+ {
+  "id": 27,
+  "text": "All packaging is 100% recyclable.",
+  "expected": [
+   {
+    "agent": "claim",
+    "quote": "All packaging is 100% recyclable"
+   }
+  ]
+ },
+ {
+  "id": 28,
+  "text": "We guarantee the freshest coffee in town.",
+  "expected": [
+   {
+    "agent": "claim",
+    "quote": "We guarantee the freshest coffee in town"
+   }
+  ]
+ },
+ {
+  "id": 29,
+  "text": "Over 90% of customers prefer our dark roast.",
+  "expected": [
+   {
+    "agent": "claim",
+    "quote": "Over 90% of customers prefer our dark roast"
+   }
+  ]
+ },
+ {
+  "id": 30,
+  "text": "We are the only roaster sourcing from 40 farms.",
+  "expected": [
+   {
+    "agent": "claim",
+    "quote": "We are the only roaster sourcing from 40 farms"
+   }
+  ]
  }
 ]
