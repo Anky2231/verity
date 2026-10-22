@@ -44,7 +44,7 @@ sequenceDiagram
 ## Design decisions worth knowing
 - **Span integrity.** Models are unreliable at character offsets, so they return the quoted text and the server computes and verifies offsets (`ai/app/spans.py`). Unicode is NFC-normalised once at ingestion. The editor maps plain-text offsets to ProseMirror positions (`web/lib/spanMap.js`) and decorations follow edits.
 - **One agent failing never blocks a review.** Each agent has its own timeout and error boundary; the UI shows "unavailable, retry" for that agent only.
-- **Optional queue.** With `REDIS_URL`, the API runs tone, term and claim as independent BullMQ jobs and asks the AI service to merge their results. Without it, the API uses the direct AI pipeline and streaming endpoint.
+- **Optional queue.** With `REDIS_URL`, the API runs tone, term and claim as independent BullMQ jobs and asks the AI service to merge their results. Without it, the API uses the direct AI pipeline and streaming endpoint. If Redis is configured but unreachable, connecting gives up after `QUEUE_READY_TIMEOUT_MS` (default 3 s), the review runs on the direct pipeline, and the queue is skipped for 30 s so later requests do not wait again. The queue is closed cleanly on SIGTERM.
 - **Four-eyes.** Nobody approves their own content; the API enforces it, not the UI.
 - **Audit log.** One SQL statement computes each hash from the previous row, a unique constraint on `(brand_id, prev_hash)` prevents forks under concurrency, and triggers block UPDATE, DELETE and TRUNCATE. Verification recomputes the whole chain.
 - **Learning loop.** Per-rule override rates (`api/src/calibration.js`) raise a rule's confidence cutoff; the AI service tags findings below the cutoff as suggestions and excludes them from the score.

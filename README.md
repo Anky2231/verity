@@ -83,6 +83,7 @@ Open http://localhost:3000. No Docker is needed locally; set `DATABASE_URL` to u
 | `AI_SERVICE_URL`, `AI_SERVICE_TOKEN` | api, ai | Where the AI service is, and the shared secret between them |
 | `DATABASE_URL` (`PGSSL=1` if needed) | api | PostgreSQL. Unset = in-memory PGlite (data lost on restart) |
 | `SEED_HISTORY=off` | api | Skip the 40 demo reviews |
+| `REDIS_URL`, `QUEUE_READY_TIMEOUT_MS` | api | Optional: run the review agents as BullMQ jobs. If Redis is unreachable the API falls back to the direct pipeline (waits at most `QUEUE_READY_TIMEOUT_MS`, default 3000) |
 | `RUN_LIMIT_PER_MIN` | api | Review runs per user per minute (default 20) |
 | `REDIS_URL` | api | Optional BullMQ queue for parallel agent jobs. Unset keeps the direct AI pipeline path |
 | `SMTP_URL`, `MAIL_FROM` | api | Optional: real email. Without it, notifications are in-app only |
