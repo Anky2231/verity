@@ -2,8 +2,8 @@
  "content": "Grab your morning java at Lumina! We are the best coffee in the world!!! Our consumers love our cheap beans, and we leverage synergistic roasting solutions. All packaging is 100% compostable. Every order ships in 48 hours.",
  "result": {
   "timing": {
-   "first_agent_ms": 2,
-   "total_ms": 2
+   "first_agent_ms": 3,
+   "total_ms": 3
   },
   "calibration": {},
   "text": "Grab your morning java at Lumina! We are the best coffee in the world!!! Our consumers love our cheap beans, and we leverage synergistic roasting solutions. All packaging is 100% compostable. Every order ships in 48 hours.",
@@ -62,7 +62,7 @@
       "quoted_text": "Every order ships in 48 hours",
       "confidence": 0.65,
       "severity": "high",
-      "explanation": "Only partially matches approved claim 'Roasted in small batches within 48 hours of shipping'.",
+      "explanation": "Only partially matches approved claim c_3 ('Roasted in small batches within 48 hours of shipping'), about 43% overlap.",
       "suggestion": "Use approved wording: \"Roasted in small batches within 48 hours of shipping\"",
       "replacement": "Roasted in small batches within 48 hours of shipping",
       "source_ref": "c_3 \u00b7 Operations Handbook p.11",
@@ -256,14 +256,14 @@
       "quoted_text": "Every order ships in 48 hours",
       "confidence": 0.65,
       "severity": "high",
-      "explanation": "Only partially matches approved claim 'Roasted in small batches within 48 hours of shipping'.",
+      "explanation": "Only partially matches approved claim c_3 ('Roasted in small batches within 48 hours of shipping'), about 43% overlap.",
       "suggestion": "Use approved wording: \"Roasted in small batches within 48 hours of shipping\"",
       "replacement": "Roasted in small batches within 48 hours of shipping",
       "source_ref": "c_3 \u00b7 Operations Handbook p.11",
       "kind": "violation"
      }
     ],
-    "latency_ms": 0,
+    "latency_ms": 1,
     "retries": 0,
     "error": null,
     "mode": "rules",
@@ -330,7 +330,7 @@
       "kind": "violation"
      }
     ],
-    "latency_ms": 0,
+    "latency_ms": 1,
     "retries": 0,
     "error": null,
     "mode": "rules",
