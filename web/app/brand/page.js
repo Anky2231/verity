@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, explain } from '../../lib/api';
 import { useSession } from '../../lib/session';
 import { markProgress } from '../../lib/progress';
+import { usePageTitle } from '../../lib/title';
 
 const SEVS = ['low', 'medium', 'high', 'critical'];
 const csv = (a) => (a ?? []).join(', ');
@@ -12,6 +13,7 @@ const nextId = (list, p) => `${p}_${Math.max(0, ...list.map((x) => Number(String
 
 export default function Brand() {
   const { token, role, ready } = useSession();
+  usePageTitle('Brand guidelines');
   const [info, setInfo] = useState(null);
   const [draft, setDraft] = useState(null);   // editable BIG being previewed
   const [notes, setNotes] = useState([]);
@@ -58,11 +60,11 @@ export default function Brand() {
   const add = (key, item) => setDraft((d) => ({ ...d, [key]: [...d[key], item] }));
 
   if (!ready) return null;
-  if (!token) return <main className="doc"><p>Please <a href="/">choose a demo role</a> first.</p></main>;
-  if (!['manager', 'approver', 'admin'].includes(role)) return <main className="doc"><p>Guidelines are managed by managers. <a href="/">Switch role</a></p></main>;
+  if (!token) return <div className="doc"><p>Please <a href="/">choose a demo role</a> first.</p></div>;
+  if (!['manager', 'approver', 'admin'].includes(role)) return <div className="doc"><p>Guidelines are managed by managers. <a href="/">Switch role</a></p></div>;
 
   return (
-    <main className="doc">
+    <div className="doc">
       <h1 style={{ marginBottom: 4 }}>Brand guidelines</h1>
       <p className="muted" style={{ marginTop: 0 }}>Upload a guideline and Verity turns it into rules, approved terms and approved claims. You review everything before it goes live.</p>
       {error && <div className="toast" role="alert"><span>{error}</span><button onClick={() => { setError(''); load(); }}>Retry</button></div>}
@@ -113,7 +115,7 @@ export default function Brand() {
 
           <div className="card" style={{ overflowX: 'auto' }}>
             <b>Rules ({draft.rules.length})</b>
-            <table style={{ width: '100%' }}><thead><tr><th>Clause</th><th>Type</th><th>Severity</th><th>Rule</th><th /></tr></thead>
+            <table style={{ width: '100%' }}><thead><tr><th>Clause</th><th>Type</th><th>Severity</th><th>Rule</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>{draft.rules.map((r, i) => (
                 <tr key={r.id}>
                   <td><input aria-label="Clause" style={{ width: 100 }} value={r.clause_ref} onChange={(e) => set('rules', i, { clause_ref: e.target.value })} /></td>
@@ -127,7 +129,7 @@ export default function Brand() {
 
           <div className="card" style={{ overflowX: 'auto' }}>
             <b>Approved terms ({draft.glossary.length})</b>
-            <table style={{ width: '100%' }}><thead><tr><th>Approved</th><th>Banned variants (comma separated)</th><th>Reason</th><th /></tr></thead>
+            <table style={{ width: '100%' }}><thead><tr><th>Approved</th><th>Banned variants (comma separated)</th><th>Reason</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>{draft.glossary.map((g, i) => (
                 <tr key={g.id}>
                   <td><input aria-label="Approved term" value={g.approved} onChange={(e) => set('glossary', i, { approved: e.target.value })} /></td>
@@ -140,7 +142,7 @@ export default function Brand() {
 
           <div className="card" style={{ overflowX: 'auto' }}>
             <b>Approved claims ({draft.claims.length})</b>
-            <table style={{ width: '100%' }}><thead><tr><th>Claim</th><th>Source document</th><th>Page</th><th /></tr></thead>
+            <table style={{ width: '100%' }}><thead><tr><th>Claim</th><th>Source document</th><th>Page</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>{draft.claims.map((c, i) => (
                 <tr key={c.id}>
                   <td><input aria-label="Claim" style={{ minWidth: 280 }} value={c.text} onChange={(e) => set('claims', i, { text: e.target.value })} /></td>
@@ -165,6 +167,6 @@ export default function Brand() {
           <ul>{info.current.glossary.map((g) => <li key={g.id}>Say “{g.approved}”, not {g.banned.map((b) => `“${b}”`).join(' or ')}</li>)}</ul>
           <ul>{info.current.claims.map((c) => <li key={c.id}>{c.text} <span className="muted">({c.source_doc}{c.page ? `, p. ${c.page}` : ''})</span></li>)}</ul>
         </details>)}
-    </main>
+    </div>
   );
 }

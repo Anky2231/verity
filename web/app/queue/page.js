@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, explain } from '../../lib/api';
 import { useSession } from '../../lib/session';
 import { markProgress } from '../../lib/progress';
+import { usePageTitle } from '../../lib/title';
 import { ACTION_LABEL, STATUS_LABEL, TIPS, ago } from '../../lib/labels';
 import ReasonDialog from '../../components/ReasonDialog';
 
@@ -15,6 +16,7 @@ export default function Queue() {
   const [error, setError] = useState('');
   const [reasonRequest, setReasonRequest] = useState(null);
   const staff = role && role !== 'creator';
+  usePageTitle(role === 'creator' ? 'My reviews' : 'Review queue');
 
   const refresh = useCallback(async () => {
     try { setRows(await api(`/reviews${status ? `?status=${status}` : ''}`, { token })); setError(''); }
@@ -41,14 +43,14 @@ export default function Queue() {
   }
 
   if (!ready) return null;
-  if (!token) return <main className="doc"><p>Please <a href="/">choose a demo role</a> first.</p></main>;
+  if (!token) return <div className="doc"><p>Please <a href="/">choose a demo role</a> first.</p></div>;
 
   return (
-    <main className="doc">
+    <div className="doc">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <h1 style={{ margin: 0 }}>{staff ? 'Review queue' : 'My reviews'}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
-          {role !== 'approver' && <a href="/review"><button className="primary">+ New review</button></a>}
+          {role !== 'approver' && <a href="/review" className="btn primary">+ New review</a>}
           <select aria-label="Status filter" value={status} onChange={(e) => setStatus(e.target.value)}>
             {STATUSES.map((s) => <option key={s} value={s}>{s ? STATUS_LABEL[s] : 'All statuses'}</option>)}
           </select>
@@ -87,6 +89,6 @@ export default function Queue() {
         onConfirm={(reason) => reasonRequest?.onConfirm(reason)}
         onCancel={() => setReasonRequest(null)}
       />
-    </main>
+    </div>
   );
 }

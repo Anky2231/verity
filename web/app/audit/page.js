@@ -2,6 +2,7 @@
 import { Fragment, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api, API } from '../../lib/api';
+import { usePageTitle } from '../../lib/title';
 
 const short = (h) => (h ? `${h.slice(0, 8)}…${h.slice(-4)}` : '');
 const when = (ts) => new Date(ts).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -19,6 +20,7 @@ function describe(r) {
 }
 
 function AuditInner() {
+  usePageTitle('Audit trail');
   const initial = useSearchParams().get('review_id') ?? '';
   const [token, setToken] = useState(undefined);
   const [rows, setRows] = useState([]);
@@ -52,11 +54,11 @@ function AuditInner() {
   const shown = action ? rows.filter((r) => r.action === action) : rows;
 
   if (token === undefined) return null;
-  if (!token) return <main style={{ padding: 32 }}><p>Please <a href="/">choose a demo role</a> first.</p></main>;
-  if (!allowed) return <main style={{ padding: 32 }}><p>The audit trail is visible to managers and approvers. <a href="/">Switch role</a></p></main>;
+  if (!token) return <div style={{ padding: 32 }}><p>Please <a href="/">choose a demo role</a> first.</p></div>;
+  if (!allowed) return <div style={{ padding: 32 }}><p>The audit trail is visible to managers and approvers. <a href="/">Switch role</a></p></div>;
 
   return (
-    <main style={{ maxWidth: 1100, margin: '24px auto', padding: '0 16px' }}>
+    <div style={{ maxWidth: 1100, margin: '24px auto', padding: '0 16px' }}>
       <p className="muted" style={{ margin: 0 }}><a href="/queue">← Queue</a></p>
       <h1 style={{ margin: '4px 0' }}>Audit trail</h1>
       <p className="muted" style={{ marginTop: 0 }}>Append-only and hash-chained: each entry includes the hash of the one before it, and the database rejects edits or deletes.</p>
@@ -97,7 +99,7 @@ function AuditInner() {
               </Fragment>))}</tbody>
           </table>)}
       </div>
-    </main>
+    </div>
   );
 }
 

@@ -10,7 +10,7 @@ export default function RootLayout({ children }) {
       <body style={{ fontFamily: 'system-ui, sans-serif', margin: 0 }}>
         <a href="#main" className="skip">Skip to content</a>
         <Header />
-        <div id="main">{children}</div>
+        <main id="main">{children}</main>
         <Walkthrough />
       </body>
     </html>

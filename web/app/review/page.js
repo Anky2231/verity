@@ -8,6 +8,7 @@ import { buildSegments, spanToRange } from '../../lib/spanMap';
 import { FlagHighlights, flagKey } from '../../components/flagHighlights';
 import { useSession } from '../../lib/session';
 import { markProgress } from '../../lib/progress';
+import { usePageTitle } from '../../lib/title';
 import { ACTION_LABEL, STATUS_LABEL, TIPS } from '../../lib/labels';
 import ReasonDialog from '../../components/ReasonDialog';
 
@@ -46,8 +47,10 @@ function ReviewInner() {
     extensions: [StarterKit, FlagHighlights.configure({ onSelect: (id) => selectRef.current(id) })],
     content: '<p>Paste or write your content here, or load a sample.</p>',
     immediatelyRender: false,
+    editorProps: { attributes: { role: 'textbox', 'aria-label': 'Content to review', 'aria-multiline': 'true' } },
   });
 
+  usePageTitle(review ? review.title : 'New review');
   const locked = !!review && !['draft', 'changes_requested'].includes(review.status);
   useEffect(() => { editor?.setEditable(!locked); }, [editor, locked]);
 
@@ -122,6 +125,12 @@ function ReviewInner() {
     } finally { setBusy(false); setLive(null); }
   }
 
+  const stepFlag = (dir) => {
+    const ids = flags.filter((f) => f.state === 'open').map((f) => f.id);
+    if (!ids.length) return;
+    const i = ids.indexOf(activeId);
+    setActiveId(ids[(i + dir + ids.length) % ids.length]);
+  };
   const active = useMemo(() => flags.find((f) => f.id === activeId), [flags, activeId]);
   const mark = (id, state) => setFlags((fs) => fs.map((f) => (f.id === id ? { ...f, state } : f)));
 
@@ -206,7 +215,7 @@ function ReviewInner() {
   const manual = (review?.decisions ?? []).filter((d) => d.decision === 'manual');
 
   if (!ready) return null;
-  if (!token) return <main className="doc"><p>Please <a href="/">choose a demo role</a> first.</p></main>;
+  if (!token) return <div className="doc"><p>Please <a href="/">choose a demo role</a> first.</p></div>;
 
   const open = flags.filter((f) => f.state === 'open');
   const resolved = flags.filter((f) => f.state !== 'open');
@@ -243,6 +252,12 @@ function ReviewInner() {
         </div>
 
         <div className="card"><EditorContent editor={editor} /></div>
+        {flags.some((f) => f.state === 'open') && (
+          <p className="legend">Underline shows severity, not just colour:
+            <span className="k" style={{ borderBottom: '2px dotted currentColor' }} /> low
+            <span className="k" style={{ borderBottom: '2px dashed currentColor' }} /> medium
+            <span className="k" style={{ borderBottom: '3px solid currentColor' }} /> high.
+            Use the Flags list below to move between flags with the keyboard.</p>)}
         {locked && <p className="muted">The text is locked while the review is in approval. {staff ? 'You can still override flags and add manual flags.' : ''}</p>}
         {error && <div className="toast" role="alert"><span>{error}</span>{!locked && editor && <button onClick={run} disabled={busy}>Retry</button>}</div>}
         <p className="muted">{report ?? 'Reviewed by Verity AI after you run a review.'} · AI assists, humans decide. Nothing is published automatically.</p>
@@ -338,15 +353,24 @@ function ReviewInner() {
         </div>
 
         <div className="card">
-          <b>Flags</b>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <b>Flags</b>
+            {open.length > 1 && (
+              <span style={{ display: 'flex', gap: 6 }}>
+                <button type="button" onClick={() => stepFlag(-1)} aria-label="Previous flag" style={{ padding: '2px 10px' }}>‹ Prev</button>
+                <button type="button" onClick={() => stepFlag(1)} aria-label="Next flag" style={{ padding: '2px 10px' }}>Next ›</button>
+              </span>)}
+          </div>
           {result && open.length === 0 && <p className="muted">All flags resolved.</p>}
           {resolved.length > 0 && <p className="muted">{resolved.map((f) => `“${f.finding.quoted_text}” ${f.state}`).join(' · ')}</p>}
           {open.map((f) => (
-            <div key={f.id} className={`item ${f.id === activeId ? 'active' : ''}`} onClick={() => setActiveId(f.id)}>
-              <span className="badge">{f.finding.agent}</span><span className="badge" title={TIPS.severity}>{f.severity}</span>
-              <span className="badge" title={TIPS.confidence}>{Math.round(f.finding.confidence * 100)}% conf</span>
-              {f.finding.kind === 'suggestion' && <span className="badge amber" title={TIPS.confidence}>suggestion</span>}
-              <div style={{ marginTop: 6 }}>“{f.finding.quoted_text}”</div>
+            <div key={f.id} className={`item ${f.id === activeId ? 'active' : ''}`}>
+              <button type="button" className="item-head" aria-expanded={f.id === activeId} onClick={() => setActiveId(f.id)}>
+                <span className="badge">{f.finding.agent}</span><span className="badge" title={TIPS.severity}>{f.severity}</span>
+                <span className="badge" title={TIPS.confidence}>{Math.round(f.finding.confidence * 100)}% conf</span>
+                {f.finding.kind === 'suggestion' && <span className="badge amber" title={TIPS.confidence}>suggestion</span>}
+                <span style={{ display: 'block', marginTop: 6 }}>“{f.finding.quoted_text}”</span>
+              </button>
               {f.id === activeId && (
                 <div style={{ marginTop: 6 }}>
                   <div className="bar" title={TIPS.confidence} style={{ margin: '4px 0' }}><i style={{ width: `${Math.round(f.finding.confidence * 100)}%` }} /></div>
@@ -356,9 +380,9 @@ function ReviewInner() {
                   {f.finding.source_ref && <p className="muted">Source: {f.finding.source_ref}</p>}
                   {(!locked || staff) && (
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {!locked && <button className="primary" disabled={!f.finding.replacement} title={f.finding.replacement ? 'Replace the flagged text with the suggested wording' : 'No automatic fix. Use Edit to rewrite it yourself.'} onClick={(e) => { e.stopPropagation(); accept(f); }}>Accept fix</button>}
-                      {!locked && <button onClick={(e) => { e.stopPropagation(); edit(f); }} title="Select this text in the editor so you can rewrite it">Edit</button>}
-                      <button onClick={(e) => { e.stopPropagation(); dispute(f); }}>{staff ? 'Override' : 'Dispute'}</button>
+                      {!locked && <button className="primary" disabled={!f.finding.replacement} title={f.finding.replacement ? 'Replace the flagged text with the suggested wording' : 'No automatic fix. Use Edit to rewrite it yourself.'} onClick={() => accept(f)}>Accept fix</button>}
+                      {!locked && <button onClick={() => edit(f)} title="Select this text in the editor so you can rewrite it">Edit</button>}
+                      <button onClick={() => dispute(f)}>{staff ? 'Override' : 'Dispute'}</button>
                     </div>)}
                 </div>)}
             </div>))}

@@ -22,7 +22,7 @@ export default function Walkthrough() {
   const [role, setRole] = useState(null);
 
   useEffect(() => {
-    try { setOpen(localStorage.getItem('verity_tour') !== 'closed'); setRole(parseJwt(localStorage.getItem('verity_token') || '')?.role ?? null); } catch { /* ignore */ }
+    try { const pref = localStorage.getItem('verity_tour'); setOpen(pref ? pref !== 'closed' : window.innerWidth >= 640); setRole(parseJwt(localStorage.getItem('verity_token') || '')?.role ?? null); } catch { /* ignore */ }
     if (path === '/audit' || path === '/dashboard') markProgress('insight');
   }, [path]);
   const toggle = (v) => { setOpen(v); try { localStorage.setItem('verity_tour', v ? 'open' : 'closed'); } catch { /* ignore */ } };

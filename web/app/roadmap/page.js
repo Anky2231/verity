@@ -31,7 +31,7 @@ const Field = ({ k, v }) => <p style={{ margin: '6px 0' }}><b>{k}.</b> {v}</p>;
 
 export default function Roadmap() {
   return (
-    <main className="doc">
+    <div className="doc">
       <p className="muted" style={{ margin: 0 }}><a href="/">← Home</a> · <a href="/about">What changed since Round 1</a></p>
       <h1 style={{ marginBottom: 4 }}>Round 3 roadmap: three improvements</h1>
       <p className="muted" style={{ marginTop: 0 }}>The three improvements named in Round 1, each with its design, data model and a measurable acceptance test. None of the features below is built yet; the last line of each card lists exactly what groundwork exists today.</p>
@@ -43,6 +43,6 @@ export default function Roadmap() {
           <p style={{ margin: '6px 0 2px' }}><b>Already in place</b></p>
           <ul style={{ margin: 0 }}>{x.built.map((b) => <li key={b}>{b}</li>)}</ul>
         </section>))}
-    </main>
+    </div>
   );
 }

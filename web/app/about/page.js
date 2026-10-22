@@ -55,7 +55,7 @@ const DEVIATIONS = [
 
 export default function About() {
   return (
-    <main className="doc">
+    <div className="doc">
       <p className="muted" style={{ margin: 0 }}><a href="/">← Home</a> · <a href="/roadmap">Round 3 roadmap</a></p>
       <h1 style={{ marginBottom: 4 }}>What changed since Round 1</h1>
       <p className="muted" style={{ marginTop: 0 }}>Each Round 1 promise, what shipped, and where we simplified or are not done yet.</p>
@@ -78,6 +78,6 @@ export default function About() {
         <tbody>{DEVIATIONS.map(([a, b, c]) => <tr key={a}><td><b>{a}</b></td><td>{b}</td><td>{c}</td></tr>)}</tbody>
       </table></div>
       <p className="muted">Round 1 locked the feature set after submission. No new product features were added; the changes above are infrastructure simplifications. VisualGuard, AccessGuard, multi-brand and drift analytics are not built; see the <a href="/roadmap">Round 3 roadmap</a>.</p>
-    </main>
+    </div>
   );
 }

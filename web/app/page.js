@@ -23,7 +23,7 @@ export default function Home() {
   }
 
   return (
-    <main style={{ maxWidth: 680, margin: '56px auto', padding: '0 16px', textAlign: 'center' }}>
+    <div style={{ maxWidth: 680, margin: '56px auto', padding: '0 16px', textAlign: 'center' }}>
       <h1 style={{ fontSize: 38, marginBottom: 4 }}>Verity</h1>
       <p className="muted" style={{ marginTop: 0, fontSize: 16 }}>Every word. Every pixel. On brand.</p>
       <p style={{ maxWidth: 480, margin: '16px auto', lineHeight: 1.6 }}>
@@ -49,6 +49,6 @@ export default function Home() {
         API {health ? <span className={`badge ${health.api === 'up' ? 'green' : 'red'}`}>{health.api}</span> : '…'}
         {' '}AI service {health ? <span className={`badge ${health.ai === 'up' ? 'green' : 'red'}`}>{health.ai}</span> : '…'}
       </p>
-    </main>
+    </div>
   );
 }
