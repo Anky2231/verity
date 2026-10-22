@@ -9,9 +9,16 @@ def test_health():
     assert client.get("/health").json()["ok"] is True
 
 
-def test_review_stub():
+def test_single_agent_endpoint_runs_one_agent():
     r = client.post("/review/tone", json={"revision_id": "r1", "brand_id": "b1", "text": "hello"})
-    assert r.status_code == 200 and r.json()["status"] == "ok"
+    assert r.status_code == 200 and r.json()["agent"] == "tone"
+    assert r.json()["status"] == "ok"
+    assert all(f["agent"] == "tone" for f in r.json()["findings"])
+
+
+def test_single_agent_rejects_unknown_agent():
+    r = client.post("/review/unknown", json={"revision_id": "r1", "brand_id": "b1", "text": "hello"})
+    assert r.status_code == 404
 
 
 def test_span_verification():
