@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: verity
+      POSTGRES_PASSWORD: verity
+      POSTGRES_DB: verity
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+volumes:
+  pgdata:
