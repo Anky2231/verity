@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "verity/big.schema.json",
+  "title": "BrandIntelligenceGraph",
+  "type": "object",
+  "required": ["brand_id", "version", "rules", "glossary", "claims", "tone_profile"],
+  "properties": {
+    "brand_id": { "type": "string" },
+    "version": { "type": "integer", "minimum": 1 },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "clause_ref", "text", "type", "severity"],
+        "properties": {
+          "id": { "type": "string" },
+          "clause_ref": { "type": "string" },
+          "text": { "type": "string" },
+          "type": { "enum": ["rule", "tone", "term", "claim", "visual"] },
+          "scope": { "type": "object", "properties": { "content_types": {"type":"array","items":{"type":"string"}}, "regions": {"type":"array","items":{"type":"string"}} } },
+          "severity": { "enum": ["low", "medium", "high", "critical"] }
+        }
+      }
+    },
+    "glossary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "approved", "banned"],
+        "properties": { "id": {"type":"string"}, "approved": {"type":"string"}, "banned": {"type":"array","items":{"type":"string"}}, "reason": {"type":"string"} }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "source_doc"],
+        "properties": { "id": {"type":"string"}, "text": {"type":"string"}, "source_doc": {"type":"string"}, "page": {"type":"integer"} }
+      }
+    },
+    "tone_profile": {
+      "type": "object",
+      "required": ["descriptors"],
+      "properties": { "descriptors": {"type":"array","items":{"type":"string"}}, "do_examples": {"type":"array","items":{"type":"string"}}, "dont_examples": {"type":"array","items":{"type":"string"}} }
+    }
+  }
+}

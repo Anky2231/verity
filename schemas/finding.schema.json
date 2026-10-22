@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "verity/finding.schema.json",
+  "title": "Finding",
+  "description": "One compliance finding. Every agent (Tone, Term, Claim, later Visual/Access) emits this shape.",
+  "type": "object",
+  "required": ["agent", "rule_id", "clause_citation", "quoted_text", "confidence", "severity", "explanation"],
+  "properties": {
+    "agent": { "enum": ["tone", "term", "claim", "visual", "access", "manual"] },
+    "rule_id": { "type": "string", "description": "BIG rule/term/claim id this finding cites" },
+    "clause_citation": { "type": "string", "description": "Human-readable guideline reference, e.g. 'Voice §2.1'" },
+    "span": {
+      "type": "object",
+      "description": "Character offsets into the normalised revision text. text[start:end] MUST equal quoted_text (verified server-side).",
+      "required": ["start", "end"],
+      "properties": { "start": { "type": "integer", "minimum": 0 }, "end": { "type": "integer", "minimum": 0 } }
+    },
+    "region": {
+      "type": "object",
+      "description": "Reserved for VisualGuard (Round 3): bounding box on an image.",
+      "properties": { "x": {"type":"number"}, "y": {"type":"number"}, "w": {"type":"number"}, "h": {"type":"number"} }
+    },
+    "quoted_text": { "type": "string" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "severity": { "enum": ["low", "medium", "high", "critical"] },
+    "explanation": { "type": "string" },
+    "replacement": { "type": ["string", "null"], "description": "Literal text safe to substitute for quoted_text; null when the fix is advice only" },
+    "suggestion": { "type": "string", "description": "Replacement text preserving author intent" },
+    "source_ref": { "type": "string", "description": "ClaimGuard: approved claim id / source doc + page" }
+  }
+}
