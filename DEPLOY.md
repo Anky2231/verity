@@ -1,32 +1,46 @@
-# Day-0 deploy checklist (do this TODAY, before writing features)
+# Deploying Verity
 
-Three services, deployed from one GitHub monorepo.
+Three pieces: the web app (Vercel), the API plus AI service (one container), and a Postgres database.
+Everything below has a free tier. Free-tier rules change, so confirm on each site; **if any sign-up asks for a payment card, stop.**
 
-## 1. Push to GitHub
-```bash
-git init && git add . && git commit -m "Scaffold" && git branch -M main
-git remote add origin <your-repo-url> && git push -u origin main
-```
+## Free path (recommended)
 
-## 2. API → Railway
-- New project → Deploy from GitHub → **Root directory: `api`**
-- Add a **PostgreSQL** plugin and set `DATABASE_URL` from it (without it the API uses in-memory storage and loses data on restart).
-- Variables: `JWT_SECRET` (long random), `WEB_ORIGIN` (Vercel URL, set after step 4), `AI_SERVICE_URL` (private/public URL of ai service), `AI_SERVICE_TOKEN`, `DATABASE_URL`
-- Optional: `SMTP_URL` + `MAIL_FROM` for real email; `RUN_LIMIT_PER_MIN`; `SEED_HISTORY=off`
-- Check `https://<api-url>/health`
+### 1. Database: Neon (free Postgres)
+1. Sign in at neon.tech with GitHub. Create a project named `verity`.
+2. Copy the **connection string** (it starts with `postgresql://` and ends with `?sslmode=require`).
 
-## 3. AI service → Railway
-- New service from same repo → **Root directory: `ai`**
-- Variables: `AI_SERVICE_TOKEN` (same as api). Optional: `ANTHROPIC_API_KEY` + `MODEL_FAST` (otherwise ToneGuard runs in labelled basic mode). If you add a key, set a spend cap in the Anthropic console first.
-- Check `https://<ai-url>/health`
+### 2. API + AI service: Render (free web service)
+1. Sign in at render.com with GitHub and give it access to the `verity` repo.
+2. **New → Blueprint**, pick the repo. Render reads `render.yaml` and creates one service, `verity-api`, from the `Dockerfile`.
+3. When asked for values:
+   - `DATABASE_URL`: the Neon connection string from step 1.
+   - `WEB_ORIGIN`: put the Vercel URL once you have it (step 3); a placeholder is fine for now.
+   - `JWT_SECRET` is generated for you.
+4. Wait for the deploy, then open `https://<service>.onrender.com/health/deep`. You want `"api":"up","ai":"up"`.
+   If you see a Postgres SSL error in the logs, add the variable `PGSSL=1`.
 
-## 4. Web → Vercel
-- Import repo → **Root directory: `web`**, framework Next.js
-- Variable: `NEXT_PUBLIC_API_URL` = API URL from step 2
-- Then set the API's `WEB_ORIGIN` to the Vercel URL and redeploy API.
+The AI service runs inside the same container on localhost, so there is no second service and no shared secret to configure.
 
-## 5. Verify
-Open the Vercel URL → both status badges show `up` → **Start judge walkthrough** opens the guideline page as Manager. Then run `docs/QA_SCRIPT.md`.
+### 3. Web: Vercel
+1. Import the repo, **Root Directory** `web` (framework Next.js).
+2. Environment variable `NEXT_PUBLIC_API_URL` = the Render URL (no trailing slash). Set it **before** the build; it is baked in at build time.
+3. In Vercel, project settings → Deployment Protection → turn **Vercel Authentication off**, or judges will be asked to log in.
+4. Back in Render, set `WEB_ORIGIN` to the exact Vercel URL (no trailing slash) and let it redeploy.
 
-## Keep it warm
-Redis is not used in this build. Use an always-on plan, or set the GitHub repository variables `WEB_URL` and `API_URL` so `.github/workflows/keepalive.yml` pings both every 10 minutes. After deploying, leave it idle for an hour and open the URL once to confirm there is no cold start.
+### 4. Verify
+Open the Vercel URL: both badges show `up`, **Start judge walkthrough** opens the guideline page. Then run `docs/QA_SCRIPT.md`.
+
+### 5. Free-tier behaviour to expect
+- Free web services sleep when idle, so the first visit after a quiet period can take about a minute. Set the GitHub repository variables `WEB_URL` and `API_URL` (Settings → Secrets and variables → Actions → Variables); `.github/workflows/keepalive.yml` then pings both every 10 minutes. GitHub's scheduler is not exact, so occasional cold starts can still happen.
+- Free Postgres databases have size and compute limits and may suspend when idle (they wake on the next query).
+- Do an idle-for-an-hour test before submitting.
+
+## Optional: Anthropic key
+Without `ANTHROPIC_API_KEY` and `MODEL_FAST`, ToneGuard runs in labelled basic mode and costs nothing. If you add a key, set a spend cap in the Anthropic console first.
+
+## Alternative: Railway (trial credit, then paid)
+Two services from the same repo with Root Directory `api` and `ai` (each has a `railway.json`), plus a Railway PostgreSQL plugin.
+Variables on the API: `JWT_SECRET`, `AI_SERVICE_URL` (the AI service's public URL), `AI_SERVICE_TOKEN` (same value on both services), `DATABASE_URL` (reference the Postgres plugin), `WEB_ORIGIN`.
+
+## Local testing against a real Postgres
+`TEST_DATABASE_URL=postgres://user:pass@host:5432/db npm test` in `api/` runs the whole suite against a real server (each test database is isolated in its own schema). Without it, the tests use the in-process Postgres.
