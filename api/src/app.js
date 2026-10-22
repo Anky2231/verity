@@ -74,6 +74,7 @@ export function createApp({ db } = {}) {
 
   if (db) {
     const reviewQueue = process.env.REDIS_URL ? createReviewQueue({ aiFetch }) : null;
+    app.locals.closeQueue = () => reviewQueue?.close();
     app.use('/reviews', reviewsRouter({ db, aiFetch, aiStream, reviewQueue }));
     app.use('/brand', brandRouter({ db, aiFetch }));
     app.use('/notifications', notificationsRouter({ db }));

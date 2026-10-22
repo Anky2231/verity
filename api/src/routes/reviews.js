@@ -19,6 +19,7 @@ const flagCount = (result) => (result?.highlights ?? []).reduce((n, h) => n + h.
 export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
   const r = Router();
   const cache = new LruCache(200);
+  let queueDownUntil = 0; // circuit breaker: skip the queue briefly after it fails
   const limit = rateLimiter(Number(process.env.RUN_LIMIT_PER_MIN || 20), 60000);
   r.use(requireAuth);
 
@@ -82,11 +83,10 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
       text, big: big.data, calibration: calibration.cutoffs };
     try {
       let result;
-      if (reviewQueue) {
-        result = await reviewQueue.run(body, emit);
-      } else if (emit) {
+      const direct = async () => {
+        if (!emit) return aiFetch('/review', { method: 'POST', body: JSON.stringify(body) });
         const res = await aiStream('/stream/review', body);
-        let buf = '';
+        let buf = '', done;
         for await (const chunk of res.body) {
           buf += Buffer.from(chunk).toString('utf8');
           let nl;
@@ -95,12 +95,22 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
             if (!line) continue;
             const ev = JSON.parse(line);
             if (ev.event === 'agent') emit('agent', ev.result);
-            else if (ev.event === 'done') result = ev.result;
+            else if (ev.event === 'done') done = ev.result;
             else if (ev.event === 'error') throw new Error(ev.error);
           }
         }
-        if (!result) throw new Error('ai_incomplete');
-      } else result = await aiFetch('/review', { method: 'POST', body: JSON.stringify(body) });
+        if (!done) throw new Error('ai_incomplete');
+        return done;
+      };
+      if (reviewQueue && Date.now() >= queueDownUntil) {
+        try { result = await reviewQueue.run(body, emit); }
+        catch (e) {
+          // Redis is optional infrastructure: if it is unreachable, use the direct pipeline and skip the queue for a while.
+          console.warn(`review queue unavailable (${e.message}); using the direct pipeline for 30 s`);
+          queueDownUntil = Date.now() + 30000;
+          result = await direct();
+        }
+      } else result = await direct();
       cache.set(key, result);
       return { result, source: 'ai' };
     } catch (e) {

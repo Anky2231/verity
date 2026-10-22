@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "test": "node --test test/rbac.test.js test/workflow.test.js test/round2.test.js test/queue.test.js",
-    "test:queue": "node --test test/queue.test.js",
+    "test": "node --test test/rbac.test.js test/workflow.test.js test/round2.test.js test/queue.test.js test/queue-fallback.test.js",
+    "test:queue": "node --test test/queue.test.js test/queue-fallback.test.js",
     "benchmark:queue": "node scripts/benchmark-queue.js"
   },
   "engines": {
