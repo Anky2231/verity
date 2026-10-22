@@ -9,8 +9,8 @@ const MVP = [
     'Managers upload a PDF, DOCX, TXT or MD guideline (or use the sample). Rules, approved terms, approved claims with source pages, and the voice profile are extracted, shown in an editable preview with notes on anything unclear, and published as a new immutable version. Extraction is rule-based rather than LLM-based, and there are no tone embeddings yet.',
     'ai/app/extract.py · api/src/routes/brand.js · /brand page · tests for real PDF and DOCX'],
   ['Multi-agent review engine', 'Simplified',
-    'ToneGuard, TermGuard and ClaimGuard run in parallel with per-agent timeouts; one agent failing does not block the others. Results stream to the page as each agent finishes (server-sent events). Parallelism uses asyncio rather than BullMQ and Redis. ToneGuard runs in labelled basic mode on this deployment.',
-    'ai/app/pipeline.py · api/src/routes/reviews.js (run/stream) · ai/tests · api/test/round2.test.js'],
+    'ToneGuard, TermGuard and ClaimGuard run in parallel with per-agent failure isolation; one agent failing does not block the others. Results stream as each agent finishes. With REDIS_URL, the API runs independent BullMQ jobs and the AI service merges their AgentResults; without it, the direct asyncio pipeline remains active. ToneGuard runs in labelled basic mode on this deployment.',
+    'ai/app/pipeline.py, ai/app/main.py (/review/{agent}, /merge), api/src/queue.js, api/src/routes/reviews.js and queue integration tests'],
   ['Inline annotation editor', 'Done',
     'TipTap editor with highlights for every flag, severity colours, click-to-select, and flags that follow the text as it is edited.',
     'web/components/flagHighlights.js · web/app/review/page.js'],
@@ -39,7 +39,7 @@ const NAMED = [
     'Every flag shows its confidence. Findings below the cutoff are tagged "suggestion" and do not lower the score. Per rule, a high share of disputes and overrides (at least 50% over 5 or more decisions) raises that rule\u2019s cutoff from 60% to 75%, and the dashboard shows the effect.',
     'api/src/calibration.js · ai/app/pipeline.py · api/test/round2.test.js (learning loop)'],
   ['Review latency via parallel streaming', 'Done',
-    'Agents run in parallel and each result reaches the page as soon as it is ready. Measured in rules mode on a 1,032-word draft: first agent result 1 ms median (3 ms max), full review 2 ms median (3 ms max). LLM-mode latency has not been measured yet; the target is a first result under 10 s.',
+    'Agents run in parallel and each result reaches the page as soon as it is ready. In-process rules mode on a 1,032-word draft: first agent 1 ms median (3 ms max), full review 2 ms median (3 ms max). Queue mode measured 197.1 ms median versus 165.5 ms direct (+31.5 ms) over 10 local runs on a 1,032-word sample expansion with Redis 8.2.10. LLM-mode latency has not been measured yet; the target is a first result under 10 s.',
     'ai/app/pipeline.py (timing) · api streaming route · run details panel'],
 ];
 
@@ -49,7 +49,7 @@ const DEVIATIONS = [
   ['AWS S3', 'Deferred to Round 3 with VisualGuard', 'Images only matter once VisualGuard exists.'],
   ['Clerk', 'Own JWT auth with seeded demo users', 'Judges can try every role in one click, with no signup. The role model is unchanged.'],
   ['Liveblocks', 'Dropped', 'Not part of the core review workflow.'],
-  ['BullMQ + Redis + Socket.IO', 'In-process parallel agents (asyncio) and server-sent events', 'Fewer moving parts for the first deployment, and judges get the same progressive results. A queue becomes worthwhile with multiple workers.'],
+  ['BullMQ + Redis + Socket.IO', 'Optional BullMQ + Redis jobs when REDIS_URL is configured; SSE remains the browser stream. Without REDIS_URL, the direct asyncio pipeline is used.', 'The live demo keeps working without Redis, while deployments that configure Redis can distribute independent agent jobs. Socket.IO remains replaced by server-sent events.'],
   ['Claude 3.5 Sonnet', 'Model-agnostic ToneGuard; basic mode live', 'The live demo runs rule-based tone checks so it costs nothing and cannot hit rate limits. The LLM path is built and switches on with two environment variables.'],
 ];
 
