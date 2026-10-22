@@ -96,7 +96,9 @@ Open http://localhost:3000. No Docker is needed locally; set `DATABASE_URL` to u
 cd api && npm test            # 22 default-path tests + 3 Redis queue integration tests (skipped without REDIS_URL)
 cd ai  && .venv/bin/python -m pytest -q     # 35 tests: spans (unicode, repeats), merge, retries, extraction (real PDF/DOCX), streaming, calibration, prompt injection
 cd web && npm test && npm run lint          # span-mapping tests + lint
-cd web && npm run e2e         # 34 browser checks of the full journey on a running stack (needs Chrome)
+cd web && npm run e2e         # 37 browser checks of the full journey on a running stack (needs Chrome)
+cd web && npm run a11y        # axe-core audit: 11 pages and states in light and dark mode (0 violations)
+cd web && npm run keyboard    # keyboard-only journey, tab order and reflow at 320 px / 200% zoom (15 checks)
 cd ai  && .venv/bin/python scripts/eval.py  # precision / recall on 30 annotated texts
 ```
 CI runs all of these plus `npm audit` and `pip-audit` ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
@@ -137,5 +139,7 @@ VisualGuard, multi-brand workspaces and Brand Drift Intelligence, with design, d
 
 
 *(Add each member's Round 2 contribution here before submitting.)*
+
+Accessibility and usability: [docs/USABILITY.md](docs/USABILITY.md) (the usability test with outside participants has not been run yet)
 
 Full plan: [VERITY_ROUND2_PLAN.md](VERITY_ROUND2_PLAN.md) · Deploy: [DEPLOY.md](DEPLOY.md) · QA: [docs/QA_SCRIPT.md](docs/QA_SCRIPT.md) · Demo video script: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) · Submission checklist: [docs/SUBMISSION.md](docs/SUBMISSION.md)

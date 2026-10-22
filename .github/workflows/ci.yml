@@ -102,7 +102,7 @@ jobs:
           wait_url http://127.0.0.1:8000/health
           wait_url http://127.0.0.1:4000/health
           wait_url http://127.0.0.1:3000
-          cd web && npm run e2e
+          cd web && npm run e2e && npm run a11y && npm run keyboard
           cd ..
           kill "$API_PID"
           wait "$API_PID" || true
