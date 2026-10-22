@@ -1,0 +1,92 @@
+{
+  "brand_id": "lumina",
+  "version": 1,
+  "tone_profile": {
+    "descriptors": [
+      "warm",
+      "plain-spoken",
+      "curious",
+      "confident but never boastful"
+    ],
+    "do_examples": [
+      "Our roasters pick every batch by hand.",
+      "Try it black first, then tell us what you taste."
+    ],
+    "dont_examples": [
+      "We are the undisputed #1 coffee on the planet!!!",
+      "Leverage our synergistic bean solutions."
+    ]
+  },
+  "rules": [
+    {
+      "id": "r_voice_1",
+      "clause_ref": "Voice \u00a71.2",
+      "type": "tone",
+      "severity": "medium",
+      "text": "Write in a warm, plain-spoken voice. Avoid corporate jargon and hype."
+    },
+    {
+      "id": "r_voice_2",
+      "clause_ref": "Voice \u00a71.4",
+      "type": "tone",
+      "severity": "low",
+      "text": "At most one exclamation mark per piece; never use all-caps for emphasis."
+    },
+    {
+      "id": "r_claim_1",
+      "clause_ref": "Claims \u00a73.1",
+      "type": "claim",
+      "severity": "high",
+      "text": "Only make product claims listed in the approved claims register. No unqualified superlatives."
+    }
+  ],
+  "glossary": [
+    {
+      "id": "t_1",
+      "approved": "coffee beans",
+      "banned": [
+        "java",
+        "joe"
+      ],
+      "reason": "Casual slang is off-brand (Terminology \u00a72.1)."
+    },
+    {
+      "id": "t_2",
+      "approved": "customers",
+      "banned": [
+        "consumers",
+        "users"
+      ],
+      "reason": "We say 'customers' (Terminology \u00a72.3)."
+    },
+    {
+      "id": "t_3",
+      "approved": "ethically sourced",
+      "banned": [
+        "cheap beans",
+        "bargain beans"
+      ],
+      "reason": "Never frame sourcing around price (Terminology \u00a72.5)."
+    }
+  ],
+  "claims": [
+    {
+      "id": "c_1",
+      "text": "Our beans are sourced directly from 40 partner farms",
+      "source_doc": "Sourcing Report 2025",
+      "page": 4
+    },
+    {
+      "id": "c_2",
+      "text": "All packaging is 100% compostable",
+      "source_doc": "Sustainability Brief",
+      "page": 2
+    },
+    {
+      "id": "c_3",
+      "text": "Roasted in small batches within 48 hours of shipping",
+      "source_doc": "Operations Handbook",
+      "page": 11
+    }
+  ]
+}
