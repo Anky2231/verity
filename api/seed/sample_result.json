@@ -1,0 +1,392 @@
+{
+ "content": "Grab your morning java at Lumina! We are the best coffee in the world!!! Our consumers love our cheap beans, and we leverage synergistic roasting solutions. All packaging is 100% compostable. Every order ships in 48 hours.",
+ "result": {
+  "timing": {
+   "first_agent_ms": 2,
+   "total_ms": 2
+  },
+  "calibration": {},
+  "text": "Grab your morning java at Lumina! We are the best coffee in the world!!! Our consumers love our cheap beans, and we leverage synergistic roasting solutions. All packaging is 100% compostable. Every order ships in 48 hours.",
+  "score": 59,
+  "summary": "7 issue(s). Score 59/100. Prioritised by severity then confidence; most serious: high (claim).",
+  "highlights": [
+   {
+    "span": {
+     "start": 34,
+     "end": 69
+    },
+    "severity": "high",
+    "agents": [
+     "claim"
+    ],
+    "findings": [
+     {
+      "agent": "claim",
+      "rule_id": "r_claim_1",
+      "clause_citation": "Claims \u00a73.1",
+      "span": {
+       "start": 34,
+       "end": 69
+      },
+      "region": null,
+      "quoted_text": "We are the best coffee in the world",
+      "confidence": 0.85,
+      "severity": "high",
+      "explanation": "No approved claim supports this statement.",
+      "suggestion": "Remove the claim or have Legal add it to the approved claims register.",
+      "replacement": null,
+      "source_ref": null,
+      "kind": "violation"
+     }
+    ]
+   },
+   {
+    "span": {
+     "start": 192,
+     "end": 221
+    },
+    "severity": "high",
+    "agents": [
+     "claim"
+    ],
+    "findings": [
+     {
+      "agent": "claim",
+      "rule_id": "r_claim_1",
+      "clause_citation": "Claims \u00a73.1",
+      "span": {
+       "start": 192,
+       "end": 221
+      },
+      "region": null,
+      "quoted_text": "Every order ships in 48 hours",
+      "confidence": 0.65,
+      "severity": "high",
+      "explanation": "Only partially matches approved claim 'Roasted in small batches within 48 hours of shipping'.",
+      "suggestion": "Use approved wording: \"Roasted in small batches within 48 hours of shipping\"",
+      "replacement": "Roasted in small batches within 48 hours of shipping",
+      "source_ref": "c_3 \u00b7 Operations Handbook p.11",
+      "kind": "violation"
+     }
+    ]
+   },
+   {
+    "span": {
+     "start": 18,
+     "end": 22
+    },
+    "severity": "medium",
+    "agents": [
+     "term"
+    ],
+    "findings": [
+     {
+      "agent": "term",
+      "rule_id": "t_1",
+      "clause_citation": "Casual slang is off-brand (Terminology \u00a72.1).",
+      "span": {
+       "start": 18,
+       "end": 22
+      },
+      "region": null,
+      "quoted_text": "java",
+      "confidence": 0.95,
+      "severity": "medium",
+      "explanation": "'java' is not an approved term. Casual slang is off-brand (Terminology \u00a72.1).",
+      "suggestion": "coffee beans",
+      "replacement": "coffee beans",
+      "source_ref": null,
+      "kind": "violation"
+     }
+    ]
+   },
+   {
+    "span": {
+     "start": 77,
+     "end": 86
+    },
+    "severity": "medium",
+    "agents": [
+     "term"
+    ],
+    "findings": [
+     {
+      "agent": "term",
+      "rule_id": "t_2",
+      "clause_citation": "We say 'customers' (Terminology \u00a72.3).",
+      "span": {
+       "start": 77,
+       "end": 86
+      },
+      "region": null,
+      "quoted_text": "consumers",
+      "confidence": 0.95,
+      "severity": "medium",
+      "explanation": "'consumers' is not an approved term. We say 'customers' (Terminology \u00a72.3).",
+      "suggestion": "customers",
+      "replacement": "customers",
+      "source_ref": null,
+      "kind": "violation"
+     }
+    ]
+   },
+   {
+    "span": {
+     "start": 96,
+     "end": 107
+    },
+    "severity": "medium",
+    "agents": [
+     "term"
+    ],
+    "findings": [
+     {
+      "agent": "term",
+      "rule_id": "t_3",
+      "clause_citation": "Never frame sourcing around price (Terminology \u00a72.5).",
+      "span": {
+       "start": 96,
+       "end": 107
+      },
+      "region": null,
+      "quoted_text": "cheap beans",
+      "confidence": 0.95,
+      "severity": "medium",
+      "explanation": "'cheap beans' is not an approved term. Never frame sourcing around price (Terminology \u00a72.5).",
+      "suggestion": "ethically sourced",
+      "replacement": "ethically sourced",
+      "source_ref": null,
+      "kind": "violation"
+     }
+    ]
+   },
+   {
+    "span": {
+     "start": 116,
+     "end": 155
+    },
+    "severity": "medium",
+    "agents": [
+     "tone"
+    ],
+    "findings": [
+     {
+      "agent": "tone",
+      "rule_id": "r_voice_1",
+      "clause_citation": "Voice \u00a71.2",
+      "span": {
+       "start": 116,
+       "end": 155
+      },
+      "region": null,
+      "quoted_text": "leverage synergistic roasting solutions",
+      "confidence": 0.75,
+      "severity": "medium",
+      "explanation": "Corporate jargon conflicts with our plain-spoken voice.",
+      "suggestion": "Say it simply, e.g. 'use' instead of 'leverage'.",
+      "replacement": null,
+      "source_ref": null,
+      "kind": "violation"
+     }
+    ]
+   },
+   {
+    "span": {
+     "start": 69,
+     "end": 72
+    },
+    "severity": "low",
+    "agents": [
+     "tone"
+    ],
+    "findings": [
+     {
+      "agent": "tone",
+      "rule_id": "r_voice_2",
+      "clause_citation": "Voice \u00a71.4",
+      "span": {
+       "start": 69,
+       "end": 72
+      },
+      "region": null,
+      "quoted_text": "!!!",
+      "confidence": 0.7,
+      "severity": "low",
+      "explanation": "Excess exclamation or all-caps emphasis is off-voice.",
+      "suggestion": "Use a single exclamation mark at most.",
+      "replacement": null,
+      "source_ref": null,
+      "kind": "violation"
+     }
+    ]
+   }
+  ],
+  "agents": [
+   {
+    "agent": "claim",
+    "status": "ok",
+    "findings": [
+     {
+      "agent": "claim",
+      "rule_id": "r_claim_1",
+      "clause_citation": "Claims \u00a73.1",
+      "span": {
+       "start": 34,
+       "end": 69
+      },
+      "region": null,
+      "quoted_text": "We are the best coffee in the world",
+      "confidence": 0.85,
+      "severity": "high",
+      "explanation": "No approved claim supports this statement.",
+      "suggestion": "Remove the claim or have Legal add it to the approved claims register.",
+      "replacement": null,
+      "source_ref": null,
+      "kind": "violation"
+     },
+     {
+      "agent": "claim",
+      "rule_id": "r_claim_1",
+      "clause_citation": "Claims \u00a73.1",
+      "span": {
+       "start": 192,
+       "end": 221
+      },
+      "region": null,
+      "quoted_text": "Every order ships in 48 hours",
+      "confidence": 0.65,
+      "severity": "high",
+      "explanation": "Only partially matches approved claim 'Roasted in small batches within 48 hours of shipping'.",
+      "suggestion": "Use approved wording: \"Roasted in small batches within 48 hours of shipping\"",
+      "replacement": "Roasted in small batches within 48 hours of shipping",
+      "source_ref": "c_3 \u00b7 Operations Handbook p.11",
+      "kind": "violation"
+     }
+    ],
+    "latency_ms": 0,
+    "retries": 0,
+    "error": null,
+    "mode": "rules",
+    "dropped": 0,
+    "model": null,
+    "tokens": null
+   },
+   {
+    "agent": "term",
+    "status": "ok",
+    "findings": [
+     {
+      "agent": "term",
+      "rule_id": "t_1",
+      "clause_citation": "Casual slang is off-brand (Terminology \u00a72.1).",
+      "span": {
+       "start": 18,
+       "end": 22
+      },
+      "region": null,
+      "quoted_text": "java",
+      "confidence": 0.95,
+      "severity": "medium",
+      "explanation": "'java' is not an approved term. Casual slang is off-brand (Terminology \u00a72.1).",
+      "suggestion": "coffee beans",
+      "replacement": "coffee beans",
+      "source_ref": null,
+      "kind": "violation"
+     },
+     {
+      "agent": "term",
+      "rule_id": "t_2",
+      "clause_citation": "We say 'customers' (Terminology \u00a72.3).",
+      "span": {
+       "start": 77,
+       "end": 86
+      },
+      "region": null,
+      "quoted_text": "consumers",
+      "confidence": 0.95,
+      "severity": "medium",
+      "explanation": "'consumers' is not an approved term. We say 'customers' (Terminology \u00a72.3).",
+      "suggestion": "customers",
+      "replacement": "customers",
+      "source_ref": null,
+      "kind": "violation"
+     },
+     {
+      "agent": "term",
+      "rule_id": "t_3",
+      "clause_citation": "Never frame sourcing around price (Terminology \u00a72.5).",
+      "span": {
+       "start": 96,
+       "end": 107
+      },
+      "region": null,
+      "quoted_text": "cheap beans",
+      "confidence": 0.95,
+      "severity": "medium",
+      "explanation": "'cheap beans' is not an approved term. Never frame sourcing around price (Terminology \u00a72.5).",
+      "suggestion": "ethically sourced",
+      "replacement": "ethically sourced",
+      "source_ref": null,
+      "kind": "violation"
+     }
+    ],
+    "latency_ms": 0,
+    "retries": 0,
+    "error": null,
+    "mode": "rules",
+    "dropped": 0,
+    "model": null,
+    "tokens": null
+   },
+   {
+    "agent": "tone",
+    "status": "ok",
+    "findings": [
+     {
+      "agent": "tone",
+      "rule_id": "r_voice_2",
+      "clause_citation": "Voice \u00a71.4",
+      "span": {
+       "start": 69,
+       "end": 72
+      },
+      "region": null,
+      "quoted_text": "!!!",
+      "confidence": 0.7,
+      "severity": "low",
+      "explanation": "Excess exclamation or all-caps emphasis is off-voice.",
+      "suggestion": "Use a single exclamation mark at most.",
+      "replacement": null,
+      "source_ref": null,
+      "kind": "violation"
+     },
+     {
+      "agent": "tone",
+      "rule_id": "r_voice_1",
+      "clause_citation": "Voice \u00a71.2",
+      "span": {
+       "start": 116,
+       "end": 155
+      },
+      "region": null,
+      "quoted_text": "leverage synergistic roasting solutions",
+      "confidence": 0.75,
+      "severity": "medium",
+      "explanation": "Corporate jargon conflicts with our plain-spoken voice.",
+      "suggestion": "Say it simply, e.g. 'use' instead of 'leverage'.",
+      "replacement": null,
+      "source_ref": null,
+      "kind": "violation"
+     }
+    ],
+    "latency_ms": 2,
+    "retries": 0,
+    "error": null,
+    "mode": "fallback",
+    "dropped": 0,
+    "model": null,
+    "tokens": null
+   }
+  ]
+ }
+}
