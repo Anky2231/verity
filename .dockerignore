@@ -1,0 +1,9 @@
+**/node_modules
+**/.venv
+**/.next
+**/__pycache__
+**/.pytest_cache
+.git
+web
+docs
+*.md

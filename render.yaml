@@ -1,0 +1,15 @@
+# Render blueprint: one free web service running the API and the AI service together.
+# The database is an external free Postgres (for example Neon); paste its connection string when asked.
+services:
+  - type: web
+    name: verity-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # paste the Postgres connection string in the Render dashboard
+      - key: WEB_ORIGIN
+        sync: false          # the exact Vercel URL, no trailing slash
+      - key: JWT_SECRET
+        generateValue: true  # Render creates a random secret
