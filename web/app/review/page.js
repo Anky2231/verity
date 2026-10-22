@@ -9,6 +9,7 @@ import { FlagHighlights, flagKey } from '../../components/flagHighlights';
 import { useSession } from '../../lib/session';
 import { markProgress } from '../../lib/progress';
 import { ACTION_LABEL, STATUS_LABEL, TIPS } from '../../lib/labels';
+import ReasonDialog from '../../components/ReasonDialog';
 
 const AGENTS = [['tone', 'ToneGuard'], ['term', 'TermGuard'], ['claim', 'ClaimGuard']];
 const toHtml = (t) => t.split('\n').map((l) => `<p>${l.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</p>`).join('');
@@ -33,10 +34,12 @@ function ReviewInner() {
   const [busy, setBusy] = useState(false);
   const [live, setLive] = useState(null); // per-agent progress while a review is running
   const [error, setError] = useState('');
+  const [reasonRequest, setReasonRequest] = useState(null);
   const [title, setTitle] = useState('');
   const [samples, setSamples] = useState([]);
   const [comment, setComment] = useState('');
   const [diff, setDiff] = useState({ from: null, to: null, data: null });
+  
   const selectRef = useRef(() => {});
   selectRef.current = (id) => setActiveId(id);
 
@@ -142,34 +145,98 @@ function ReviewInner() {
     const deco = rangeOf(f); if (!deco) return;
     editor.chain().focus().setTextSelection({ from: deco.from, to: deco.to }).run();
   }
-  async function dispute(f) {
-    const reason = window.prompt(staff ? 'Why are you overriding this flag? (required)' : 'Why do you disagree with this flag? (required)');
-    if (!reason?.trim()) return;
-    try { await decide(f, staff ? 'overridden' : 'disputed', reason.trim()); } catch (e) { setError(explain(e, 'Could not save that decision.')); }
+  
+  function requestReason({ title, description, onConfirm }) {
+    setReasonRequest({ title, description, onConfirm });
   }
+
+  async function dispute(f) {
+    requestReason({
+      title: staff ? 'Override flag' : 'Dispute flag',
+      description: staff
+        ? 'Explain why you are overriding this flag.'
+        : 'Explain why you disagree with this flag.',
+      onConfirm: async (reason) => {
+        try {
+          await decide(f, staff ? 'overridden' : 'disputed', reason);
+          setReasonRequest(null);
+        } catch (e) {
+          setError(explain(e, 'Could not save that decision.'));
+        }
+      },
+    });
+  }
+
   async function manualFlag() {
     const { from, to } = editor.state.selection;
     const quoted = editor.state.doc.textBetween(from, to, '\n').trim();
-    if (!quoted) { setError('Select the text you want to flag in the editor first.'); return; }
-    const reason = window.prompt(`Why should “${quoted.slice(0, 60)}” be flagged? (required)`);
-    if (!reason?.trim()) return;
-    try {
-      await api(`/reviews/${review.id}/decisions`, { token, method: 'POST', body: JSON.stringify({
-        revision: revNumber ?? 1, flag_key: `m-${Date.now()}`, agent: 'human', quoted_text: quoted.slice(0, 500), decision: 'manual', reason: reason.trim() }) });
-      await refreshReview(review.id); setError('');
-    } catch (e) { setError(explain(e, 'Could not add that flag.')); }
-  }
 
-  async function act(action, needsReason) {
-    let reason;
-    if (needsReason) { reason = window.prompt('Reason (required)'); if (!reason?.trim()) return; }
-    try {
-      await api(`/reviews/${review.id}/transition`, { token, method: 'POST', body: JSON.stringify({ action, reason }) });
-      if (action === 'submit') markProgress('fix');
-      if (['approve', 'escalate', 'reject'].includes(action)) markProgress('approve');
-      setError(''); await load(review.id);
-    } catch (e) { setError(explain(e)); }
+    if (!quoted) {
+      setError('Select the text you want to flag in the editor first.');
+      return;
+    }
+
+    requestReason({
+      title: 'Add a manual flag',
+      description: `Why should “${quoted.slice(0, 60)}” be flagged?`,
+      onConfirm: async (reason) => {
+        try {
+          await api(`/reviews/${review.id}/decisions`, {
+            token,
+            method: 'POST',
+            body: JSON.stringify({
+              revision: revNumber ?? 1,
+              flag_key: `m-${Date.now()}`,
+              agent: 'human',
+              quoted_text: quoted.slice(0, 500),
+              decision: 'manual',
+              reason,
+            }),
+          });
+          setReasonRequest(null);
+          await refreshReview(review.id);
+          setError('');
+        } catch (e) {
+          setError(explain(e, 'Could not add that flag.'));
+        }
+      },
+    });
   }
+  async function act(id, a) {
+  const perform = async (reason) => {
+    try {
+      await api(`/reviews/${id}/transition`, {
+        token,
+        method: 'POST',
+        body: JSON.stringify({ action: a.action, reason }),
+      });
+
+      setReasonRequest(null);
+
+      if (['approve', 'escalate', 'reject'].includes(a.action)) {
+        markProgress('approve');
+      }
+
+      await refresh();
+    } catch (e) {
+      setError(explain(e));
+    }
+  };
+
+  if (a.reason) {
+    setReasonRequest({
+      title: 'Reason required',
+      description: `Explain why you want to ${ACTION_LABEL[a.action] ?? a.action}.`,
+      onConfirm: perform,
+    });
+  } else {
+    await perform(undefined);
+  }
+}
+  
+
+        
+
   async function postComment() {
     if (!comment.trim()) return;
     try { await api(`/reviews/${review.id}/comments`, { token, method: 'POST', body: JSON.stringify({ body: comment.trim() }) }); setComment(''); await refreshReview(review.id); }
@@ -185,7 +252,15 @@ function ReviewInner() {
   const manual = (review?.decisions ?? []).filter((d) => d.decision === 'manual');
 
   if (!ready) return null;
-  if (!token) return <main className="doc"><p>Please <a href="/">choose a demo role</a> first.</p></main>;
+  if (!token) return <main className="doc"><p>Please <a href="/">choose a demo role</a> first.</p>
+  <ReasonDialog
+  open={Boolean(reasonRequest)}
+  title={reasonRequest?.title}
+  description={reasonRequest?.description}
+  onConfirm={(reason) => reasonRequest?.onConfirm(reason)}
+  onCancel={() => setReasonRequest(null)}
+/>
+</main>;
 
   const open = flags.filter((f) => f.state === 'open');
   const resolved = flags.filter((f) => f.state !== 'open');
@@ -343,16 +418,24 @@ function ReviewInner() {
             </div>))}
         </div>
 
-        {manual.length > 0 && (
+                {manual.length > 0 && (
           <div className="card">
             <b>Manual flags</b>
             {manual.map((d) => <p key={d.id} className="muted" style={{ margin: '6px 0' }}><b>{d.actor_name}</b> flagged “{d.quoted_text}” — {d.reason}</p>)}
           </div>)}
-      </aside>
+           </aside>
+
+      <ReasonDialog
+        open={Boolean(reasonRequest)}
+        title={reasonRequest?.title}
+        description={reasonRequest?.description}
+        onConfirm={(reason) => reasonRequest?.onConfirm(reason)}
+        onCancel={() => setReasonRequest(null)}
+      />
     </div>
   );
 }
-
 export default function ReviewPage() {
   return <Suspense fallback={null}><ReviewInner /></Suspense>;
 }
+
