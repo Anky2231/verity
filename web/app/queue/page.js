@@ -22,37 +22,24 @@ export default function Queue() {
   }, [token, status]);
   useEffect(() => { if (token) refresh(); }, [token, refresh]);
 
-  async function act(id, a) {
-  const perform = async (reason) => {
-    try {
-      await api(`/reviews/${id}/transition`, {
-        token,
-        method: 'POST',
-        body: JSON.stringify({ action: a.action, reason }),
-      });
-
-      setReasonRequest(null);
-
-      if (['approve', 'escalate', 'reject'].includes(a.action)) {
-        markProgress('approve');
-      }
-
+  // Actions that need a reason open the dialog; it closes either way and a failure shows in the error banner.
+  function act(id, a) {
+    const run = async (reason) => {
+      await api(`/reviews/${id}/transition`, { token, method: 'POST', body: JSON.stringify({ action: a.action, reason }) });
+      if (['approve', 'escalate', 'reject'].includes(a.action)) markProgress('approve');
       await refresh();
-    } catch (e) {
-      setError(explain(e));
-    }
-  };
-
-  if (a.reason) {
-    setReasonRequest({
-      title: 'Reason required',
-      description: `Explain why you want to ${ACTION_LABEL[a.action] ?? a.action}.`,
-      onConfirm: perform,
-    });
-  } else {
-    await perform(undefined);
+    };
+    if (a.reason) {
+      setReasonRequest({
+        title: 'Reason required',
+        description: `Explain why you want to ${(ACTION_LABEL[a.action] ?? a.action).toLowerCase()}.`,
+        onConfirm: async (reason) => {
+          try { await run(reason); } catch (e) { setError(explain(e)); } finally { setReasonRequest(null); }
+        },
+      });
+    } else run().catch((e) => setError(explain(e)));
   }
-}
+
   if (!ready) return null;
   if (!token) return <main className="doc"><p>Please <a href="/">choose a demo role</a> first.</p></main>;
 
@@ -94,12 +81,12 @@ export default function Queue() {
       </div>
       {staff && <p className="muted">Compliance numbers are on the <a href="/dashboard">dashboard</a>.</p>}
       <ReasonDialog
-  open={Boolean(reasonRequest)}
-  title={reasonRequest?.title}
-  description={reasonRequest?.description}
-  onConfirm={(reason) => reasonRequest?.onConfirm(reason)}
-  onCancel={() => setReasonRequest(null)}
-/>
+        open={Boolean(reasonRequest)}
+        title={reasonRequest?.title}
+        description={reasonRequest?.description}
+        onConfirm={(reason) => reasonRequest?.onConfirm(reason)}
+        onCancel={() => setReasonRequest(null)}
+      />
     </main>
   );
 }

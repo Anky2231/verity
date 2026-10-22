@@ -39,7 +39,6 @@ function ReviewInner() {
   const [samples, setSamples] = useState([]);
   const [comment, setComment] = useState('');
   const [diff, setDiff] = useState({ from: null, to: null, data: null });
-  
   const selectRef = useRef(() => {});
   selectRef.current = (id) => setActiveId(id);
 
@@ -145,97 +144,52 @@ function ReviewInner() {
     const deco = rangeOf(f); if (!deco) return;
     editor.chain().focus().setTextSelection({ from: deco.from, to: deco.to }).run();
   }
-  
-  function requestReason({ title, description, onConfirm }) {
-    setReasonRequest({ title, description, onConfirm });
+
+  // Opens the reason dialog. It closes whether the action works or not; a failure shows in the page's error banner
+  // (a modal would otherwise hide it).
+  function askReason({ title, description, failure, run }) {
+    setReasonRequest({ title, description, onConfirm: async (reason) => {
+      try { await run(reason); } catch (e) { setError(explain(e, failure)); } finally { setReasonRequest(null); }
+    } });
   }
 
-  async function dispute(f) {
-    requestReason({
+  function dispute(f) {
+    askReason({
       title: staff ? 'Override flag' : 'Dispute flag',
-      description: staff
-        ? 'Explain why you are overriding this flag.'
-        : 'Explain why you disagree with this flag.',
-      onConfirm: async (reason) => {
-        try {
-          await decide(f, staff ? 'overridden' : 'disputed', reason);
-          setReasonRequest(null);
-        } catch (e) {
-          setError(explain(e, 'Could not save that decision.'));
-        }
-      },
+      description: staff ? 'Explain why you are overriding this flag.' : 'Explain why you disagree with this flag.',
+      failure: 'Could not save that decision.',
+      run: (reason) => decide(f, staff ? 'overridden' : 'disputed', reason),
     });
   }
 
-  async function manualFlag() {
+  function manualFlag() {
     const { from, to } = editor.state.selection;
     const quoted = editor.state.doc.textBetween(from, to, '\n').trim();
-
-    if (!quoted) {
-      setError('Select the text you want to flag in the editor first.');
-      return;
-    }
-
-    requestReason({
+    if (!quoted) { setError('Select the text you want to flag in the editor first.'); return; }
+    askReason({
       title: 'Add a manual flag',
-      description: `Why should “${quoted.slice(0, 60)}” be flagged?`,
-      onConfirm: async (reason) => {
-        try {
-          await api(`/reviews/${review.id}/decisions`, {
-            token,
-            method: 'POST',
-            body: JSON.stringify({
-              revision: revNumber ?? 1,
-              flag_key: `m-${Date.now()}`,
-              agent: 'human',
-              quoted_text: quoted.slice(0, 500),
-              decision: 'manual',
-              reason,
-            }),
-          });
-          setReasonRequest(null);
-          await refreshReview(review.id);
-          setError('');
-        } catch (e) {
-          setError(explain(e, 'Could not add that flag.'));
-        }
+      description: `Why should \u201c${quoted.slice(0, 60)}\u201d be flagged?`,
+      failure: 'Could not add that flag.',
+      run: async (reason) => {
+        await api(`/reviews/${review.id}/decisions`, { token, method: 'POST', body: JSON.stringify({
+          revision: revNumber ?? 1, flag_key: `m-${Date.now()}`, agent: 'human', quoted_text: quoted.slice(0, 500), decision: 'manual', reason }) });
+        await refreshReview(review.id); setError('');
       },
     });
   }
-  async function act(id, a) {
-  const perform = async (reason) => {
-    try {
-      await api(`/reviews/${id}/transition`, {
-        token,
-        method: 'POST',
-        body: JSON.stringify({ action: a.action, reason }),
-      });
 
-      setReasonRequest(null);
-
-      if (['approve', 'escalate', 'reject'].includes(a.action)) {
-        markProgress('approve');
-      }
-
-      await refresh();
-    } catch (e) {
-      setError(explain(e));
-    }
-  };
-
-  if (a.reason) {
-    setReasonRequest({
-      title: 'Reason required',
-      description: `Explain why you want to ${ACTION_LABEL[a.action] ?? a.action}.`,
-      onConfirm: perform,
-    });
-  } else {
-    await perform(undefined);
+  // Workflow transitions (submit, approve, reject, escalate, ...). Some require a reason.
+  function act(action, needsReason) {
+    const run = async (reason) => {
+      await api(`/reviews/${review.id}/transition`, { token, method: 'POST', body: JSON.stringify({ action, reason }) });
+      if (action === 'submit') markProgress('fix');
+      if (['approve', 'escalate', 'reject'].includes(action)) markProgress('approve');
+      setError(''); await load(review.id);
+    };
+    if (needsReason) {
+      askReason({ title: 'Reason required', description: `Explain why you want to ${(ACTION_LABEL[action] ?? action).toLowerCase()}.`, failure: 'That action failed.', run });
+    } else run().catch((e) => setError(explain(e)));
   }
-}
-  
-
-        
 
   async function postComment() {
     if (!comment.trim()) return;
@@ -252,15 +206,7 @@ function ReviewInner() {
   const manual = (review?.decisions ?? []).filter((d) => d.decision === 'manual');
 
   if (!ready) return null;
-  if (!token) return <main className="doc"><p>Please <a href="/">choose a demo role</a> first.</p>
-  <ReasonDialog
-  open={Boolean(reasonRequest)}
-  title={reasonRequest?.title}
-  description={reasonRequest?.description}
-  onConfirm={(reason) => reasonRequest?.onConfirm(reason)}
-  onCancel={() => setReasonRequest(null)}
-/>
-</main>;
+  if (!token) return <main className="doc"><p>Please <a href="/">choose a demo role</a> first.</p></main>;
 
   const open = flags.filter((f) => f.state === 'open');
   const resolved = flags.filter((f) => f.state !== 'open');
@@ -418,12 +364,12 @@ function ReviewInner() {
             </div>))}
         </div>
 
-                {manual.length > 0 && (
+        {manual.length > 0 && (
           <div className="card">
             <b>Manual flags</b>
             {manual.map((d) => <p key={d.id} className="muted" style={{ margin: '6px 0' }}><b>{d.actor_name}</b> flagged “{d.quoted_text}” — {d.reason}</p>)}
           </div>)}
-           </aside>
+      </aside>
 
       <ReasonDialog
         open={Boolean(reasonRequest)}
@@ -438,4 +384,3 @@ function ReviewInner() {
 export default function ReviewPage() {
   return <Suspense fallback={null}><ReviewInner /></Suspense>;
 }
-
