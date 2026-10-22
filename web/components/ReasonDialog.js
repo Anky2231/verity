@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -12,6 +11,7 @@ export default function ReasonDialog({
 }) {
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const dialogRef = useRef(null);
   const inputRef = useRef(null);
   const previousFocusRef = useRef(null);
@@ -26,6 +26,7 @@ export default function ReasonDialog({
     previousFocusRef.current = document.activeElement;
     setReason('');
     setError('');
+    setBusy(false);
 
     const frame = requestAnimationFrame(() => inputRef.current?.focus());
 
@@ -70,8 +71,9 @@ export default function ReasonDialog({
 
   if (!open) return null;
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
+    if (busy) return; // a second click must not send the request twice
     const trimmed = reason.trim();
 
     if (!trimmed) {
@@ -80,7 +82,8 @@ export default function ReasonDialog({
       return;
     }
 
-    callbacksRef.current.onConfirm(trimmed);
+    setBusy(true);
+    try { await callbacksRef.current.onConfirm(trimmed); } finally { setBusy(false); }
   }
 
   return (
@@ -121,8 +124,8 @@ export default function ReasonDialog({
             <button ref={cancelRef} type="button" onClick={() => callbacksRef.current.onCancel()}>
               Cancel
             </button>
-            <button type="submit" className="primary">
-              Continue
+            <button type="submit" className="primary" disabled={busy}>
+              {busy ? 'Working…' : 'Continue'}
             </button>
           </div>
         </form>
