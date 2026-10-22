@@ -125,15 +125,14 @@ VisualGuard, multi-brand workspaces and Brand Drift Intelligence, with design, d
 - **Demo data.** "Lumina Coffee Co." and every review, user and claim are fictional.
 
 ## Team
-| Name | Role in Round 1 |
-|---|---|
-| Swastik Sahu | Full-Stack Lead & AI/ML Engineer |
-| Akriti Tigga | Backend Engineer |
-| Gayathri VS | Frontend Engineer & UI/UX Designer |
-| Sakshi Kumari | AI / ML Engineer |
-| Shivam Agarwal | Backend Engineer & DevOps |
+| Name | Role in Round 1 | Round 2 contribution |
+|---|---|---|
+| Swastik Sahu | Full-Stack Lead & AI/ML Engineer | |
+| Akriti Tigga | Backend Engineer | |
+| Gayathri VS | Frontend Engineer & UI/UX Designer | |
+| Sakshi Kumari | AI / ML Engineer | |
+| Shivam Agarwal | Backend Engineer & DevOps | Optional BullMQ and Redis review-agent jobs, AI endpoints, queue tests and documentation |
 
-**Round 2 contribution:** Shivam Agarwal — optional BullMQ and Redis review-agent jobs, single-agent and merge AI endpoints, queue tests, and documentation.
 
 *(Add each member's Round 2 contribution here before submitting.)*
 
