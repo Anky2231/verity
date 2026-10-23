@@ -25,7 +25,7 @@ Run on a **fresh browser profile** and then on a **phone**, against the deployed
 - [ ] Stop the AI service: run the **sample** content (labelled "cached demo result") and other content (clear error with Retry). Never a blank screen.
 - [ ] Click **Run** 25 times quickly: a friendly rate-limit message appears.
 - [ ] Run identical content twice: the second is instant and labelled "cached result".
-- [ ] **Cold start:** leave the deployment idle for an hour, then open the live URL. First load must finish within a few seconds.
+- [ ] **Cold start:** leave the deployment idle for at least 30 minutes, then open the live URL. Free hosting can take about 30 seconds to wake: the landing page must show "Waking up the server", and clicking a role must sign you in by itself once the server is ready, with no error and no blank screen.
 - [ ] Keyboard only: Tab reaches every button, focus ring visible, Escape/Tab leave menus.
 
 ## Before submitting

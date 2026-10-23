@@ -33,6 +33,7 @@ Open the Vercel URL: both badges show `up`, **Start judge walkthrough** opens th
 ### 5. Free-tier behaviour to expect
 - Free web services sleep when idle, so the first visit after a quiet period can take about a minute. Set the GitHub repository variables `WEB_URL` and `API_URL` (Settings → Secrets and variables → Actions → Variables); `.github/workflows/keepalive.yml` then pings both every 10 minutes. GitHub's scheduler is not exact, so occasional cold starts can still happen.
 - Free Postgres databases have size and compute limits and may suspend when idle (they wake on the next query).
+- The landing page shows a "Waking up the server" message while the API starts and signs visitors in automatically once it answers; `cd web && npm run waking` tests this with a simulated sleeping server.
 - Do an idle-for-an-hour test before submitting.
 
 ## Optional: Anthropic key

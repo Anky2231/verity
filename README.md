@@ -9,7 +9,7 @@ Nothing is published automatically.
 
 **Try it:** open the live link and click **Start judge walkthrough**. No signup. A guided bar at the bottom walks through five steps.
 Works on desktop and phone widths. **Live:** https://verity-two-delta.vercel.app  ·  API health: https://verity-api-f0xo.onrender.com/health/deep
-(Free hosting: the first visit after a quiet period can take up to a minute to wake the API.)
+(Free hosting: the first visit after a quiet period can take up to a minute to wake the API. The landing page says so while it waits and signs you in automatically once the server is ready.)
 
 ## What you can do
 | Role | Flow |
@@ -99,6 +99,7 @@ cd web && npm test && npm run lint          # span-mapping tests + lint
 cd web && npm run e2e         # 37 browser checks of the full journey on a running stack (needs Chrome)
 cd web && npm run a11y        # axe-core audit: 11 pages and states in light and dark mode (0 violations)
 cd web && npm run keyboard    # keyboard-only journey, tab order and reflow at 320 px / 200% zoom (15 checks)
+cd web && npm run waking      # simulated sleeping server: the landing page explains the wait and signs in once it is up (12 checks)
 cd ai  && .venv/bin/python scripts/eval.py  # precision / recall on the dev and held-out sets (30 texts each)
 cd ai  && .venv/bin/python scripts/calibrate.py  # stated confidence vs measured precision
 ```
