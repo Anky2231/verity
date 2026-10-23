@@ -39,7 +39,7 @@ const NAMED = [
     'Every flag shows its confidence. Findings below the cutoff are tagged "suggestion" and do not lower the score. Per rule, a high share of disputes and overrides (at least 50% over 5 or more decisions) raises that rule\u2019s cutoff from 60% to 75%, and the dashboard shows the effect. A calibration report (ai/scripts/calibrate.py) compares each agent\u2019s stated confidence with its measured precision on 66 labelled findings; the hand-set values are close, but the sets are small.',
     'api/src/calibration.js · ai/app/pipeline.py · ai/scripts/calibrate.py · api/test/round2.test.js (learning loop)'],
   ['Review latency via parallel streaming', 'Done',
-    'Agents run in parallel and each result reaches the page as soon as it is ready. In-process rules mode on a 1,032-word draft: first agent 1 ms median (3 ms max), full review 2 ms median (3 ms max). Queue mode measured 197.1 ms median versus 165.5 ms direct (+31.5 ms) over 10 local runs on a 1,032-word sample expansion with Redis 8.2.10. LLM-mode latency has not been measured yet; the target is a first result under 10 s.',
+    'Agents run in parallel and each result reaches the page as soon as it is ready. In-process rules mode on a 1,032-word draft: first agent 1 ms median (3 ms max), full review 2 ms median (3 ms max). Queue mode added +31.5 ms on the original Windows measurement (197.1 vs 165.5 ms) and +2.8 to +3.8 ms when re-measured on macOS (about 36 vs 32 ms), on a 1,032-word sample with a local Redis; the figure depends on the machine. LLM-mode latency has not been measured yet; the target is a first result under 10 s.',
     'ai/app/pipeline.py (timing) · api streaming route · run details panel'],
 ];
 
