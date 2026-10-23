@@ -111,3 +111,39 @@ def test_tone_fallback_catches_hype_extra_exclamations_and_allows_one(monkeypatc
     assert info["mode"] == "fallback" and "incredible" in quotes and quotes.count("!") == 2
     f, _ = tone.run("Our roasters pick every batch by hand!", SAMPLE_BIG)
     assert f == []
+
+
+def _f(agent, start, end, sev="medium", conf=0.9, rid="r"):
+    return Finding(agent=agent, rule_id=rid, clause_citation="c", span=Span(start=start, end=end), quoted_text="q" * (end - start),
+                   confidence=conf, severity=sev, explanation="e")
+
+
+def test_score_counts_a_highlight_once_when_two_agents_flag_the_same_words():
+    one = meta.score([_f("term", 0, 4)])
+    two = meta.score([_f("term", 0, 4), _f("tone", 0, 4)])
+    assert two == one < 100
+
+
+def test_score_uses_the_worst_finding_in_an_overlap_group():
+    nested = [_f("tone", 0, 20, "low"), _f("term", 5, 9, "high")]
+    assert meta.score(nested) == meta.score([_f("term", 5, 9, "high")])
+
+
+def test_score_still_adds_separate_highlights_and_unspanned_findings():
+    a, b = _f("term", 0, 4, conf=1.0), _f("tone", 10, 14, conf=1.0)   # exact penalties, so no rounding noise
+    assert 100 - meta.score([a, b]) == 2 * (100 - meta.score([a]))
+    unspanned = Finding(agent="tone", rule_id="r", clause_citation="c", quoted_text="q", confidence=.9, severity="medium", explanation="e")
+    assert meta.score([a, unspanned]) < meta.score([a])
+
+
+def test_score_ignores_suggestions_inside_a_group_and_honours_per_rule_cutoffs():
+    weak, strong = _f("tone", 0, 10, "high", conf=0.4), _f("term", 5, 9, "low", conf=0.9)
+    assert 100 - meta.score([weak, strong]) == 100 - meta.score([strong])      # the weak one is only a suggestion
+    f = _f("tone", 0, 4, "high", conf=0.7, rid="r_voice_1")
+    assert meta.score([f]) < 100 and meta.score([f], calibration={"r_voice_1": 0.75}) == 100
+
+
+def test_touching_spans_stay_separate_highlights_and_nested_spans_merge():
+    assert len(meta.merge([_f("term", 0, 4), _f("tone", 4, 8)])) == 2
+    m = meta.merge([_f("tone", 0, 20, "low"), _f("term", 5, 9, "high")])
+    assert len(m) == 1 and m[0]["severity"] == "high" and m[0]["span"] == {"start": 0, "end": 20}
