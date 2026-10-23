@@ -132,7 +132,7 @@ VisualGuard, multi-brand workspaces and Brand Drift Intelligence, with design, d
 
 ## Disclosures
 - **AI assistance.** The team used Claude (Anthropic) for help while building this project, including Claude Code for writing and testing parts of the code, the tests, and the documentation. The team directed the work and reviewed the result. Separately, the ToneGuard LLM path calls Anthropic's API when a key is configured; the live demo does not use it.
-- **Open source.** Next.js, React, TipTap/ProseMirror, Express, FastAPI, Pydantic, PGlite, pypdf, python-docx, nodemailer and others, used under their own licences. Add a `LICENSE` file for the project's own code before submitting.
+- **Open source.** Next.js, React, TipTap/ProseMirror, Express, FastAPI, Pydantic, PGlite, pypdf, python-docx, nodemailer and others, used under their own licences. The project's own code is released under the MIT licence (see `LICENSE`).
 - **Demo data.** "Lumina Coffee Co." and every review, user and claim are fictional.
 
 ## Team
