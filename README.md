@@ -142,7 +142,7 @@ VisualGuard, multi-brand workspaces and Brand Drift Intelligence, with design, d
 | Akriti Tigga | Backend Engineer | |
 | Gayathri VS | Frontend Engineer & UI/UX Designer | Accessible reason dialog (focus handling, keyboard support, validation) replacing the browser's pop-ups in the review and queue pages, with end-to-end test updates |
 | Sakshi Kumari | AI / ML Engineer | |
-| Shivam Agarwal | Backend Engineer & DevOps | Optional BullMQ and Redis review-agent jobs, AI endpoints, queue tests and documentation |
+| Shivam Agarwal | Backend Engineer & DevOps | Optional BullMQ and Redis review queue (one job per agent, merged by the AI service), the single-agent and merge endpoints in the AI service, queue integration tests and a queue benchmark script, CI jobs that run the tests and the browser journey with and without Redis, and the matching documentation (PR #1) |
 
 
 *(Akriti Tigga's and Sakshi Kumari's contributions are added when their work is merged; a contribution is listed only if the repository shows it.)*
