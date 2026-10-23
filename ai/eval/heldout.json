@@ -1,0 +1,277 @@
+[
+ {
+  "id": 101,
+  "text": "Every consumer deserves a better morning cup.",
+  "expected": [
+   {
+    "agent": "term",
+    "quote": "consumer"
+   }
+  ]
+ },
+ {
+  "id": 102,
+  "text": "Order our cheap-beans sampler today.",
+  "expected": [
+   {
+    "agent": "term",
+    "quote": "cheap-beans"
+   }
+  ]
+ },
+ {
+  "id": 103,
+  "text": "A bargain bean blend for the office.",
+  "expected": [
+   {
+    "agent": "term",
+    "quote": "bargain bean"
+   }
+  ]
+ },
+ {
+  "id": 104,
+  "text": "Java lovers will adore the new roast.",
+  "expected": [
+   {
+    "agent": "term",
+    "quote": "Java"
+   }
+  ]
+ },
+ {
+  "id": 105,
+  "text": "Joe says the espresso is perfect.",
+  "expected": [
+   {
+    "agent": "term",
+    "quote": "Joe"
+   }
+  ]
+ },
+ {
+  "id": 106,
+  "text": "Our java-scented candles are back.",
+  "expected": [
+   {
+    "agent": "term",
+    "quote": "java"
+   }
+  ]
+ },
+ {
+  "id": 107,
+  "text": "Consumer feedback shaped this roast.",
+  "expected": [
+   {
+    "agent": "term",
+    "quote": "Consumer"
+   }
+  ]
+ },
+ {
+  "id": 108,
+  "text": "Developers who write Java can enjoy a free cup.",
+  "expected": []
+ },
+ {
+  "id": 109,
+  "text": "Meet us at Joe's Diner on Saturday.",
+  "expected": []
+ },
+ {
+  "id": 110,
+  "text": "We thank every customer who stopped by.",
+  "expected": []
+ },
+ {
+  "id": 111,
+  "text": "OUR NEW ROAST IS HERE AND YOU NEED TO TRY IT",
+  "expected": [
+   {
+    "agent": "tone",
+    "quote": "OUR NEW ROAST IS HERE AND YOU NEED TO TRY IT"
+   }
+  ]
+ },
+ {
+  "id": 112,
+  "text": "Don't miss out! Limited time only.",
+  "expected": [
+   {
+    "agent": "tone",
+    "quote": "Don't miss out"
+   },
+   {
+    "agent": "tone",
+    "quote": "Limited time only"
+   }
+  ]
+ },
+ {
+  "id": 113,
+  "text": "We are proud to announce a revolutionary new blend.",
+  "expected": [
+   {
+    "agent": "tone",
+    "quote": "revolutionary new blend"
+   }
+  ]
+ },
+ {
+  "id": 114,
+  "text": "Leveraging our synergies, we empower baristas.",
+  "expected": [
+   {
+    "agent": "tone",
+    "quote": "Leveraging our synergies"
+   }
+  ]
+ },
+ {
+  "id": 115,
+  "text": "This paradigm shift in brewing is unstoppable.",
+  "expected": [
+   {
+    "agent": "tone",
+    "quote": "paradigm shift"
+   }
+  ]
+ },
+ {
+  "id": 116,
+  "text": "Hurry, the last chance to taste it fresh!",
+  "expected": [
+   {
+    "agent": "tone",
+    "quote": "the last chance"
+   }
+  ]
+ },
+ {
+  "id": 117,
+  "text": "Our roasters taste every batch before it ships.",
+  "expected": []
+ },
+ {
+  "id": 118,
+  "text": "Stop by on Saturday and tell us what you think.",
+  "expected": []
+ },
+ {
+  "id": 119,
+  "text": "It is simply the most amazing coffee ever made.",
+  "expected": [
+   {
+    "agent": "tone",
+    "quote": "most amazing coffee ever made"
+   }
+  ]
+ },
+ {
+  "id": 120,
+  "text": "We keep things simple: good beans, careful roasting.",
+  "expected": []
+ },
+ {
+  "id": 121,
+  "text": "All of our beans are organic.",
+  "expected": [
+   {
+    "agent": "claim",
+    "quote": "All of our beans are organic"
+   }
+  ]
+ },
+ {
+  "id": 122,
+  "text": "Our roasts are proven to boost productivity by 30%.",
+  "expected": [
+   {
+    "agent": "claim",
+    "quote": "proven to boost productivity by 30%"
+   }
+  ]
+ },
+ {
+  "id": 123,
+  "text": "We source from 40 partner farms.",
+  "expected": []
+ },
+ {
+  "id": 124,
+  "text": "Packaging that is 100% compostable.",
+  "expected": []
+ },
+ {
+  "id": 125,
+  "text": "We roast within 12 hours of shipping.",
+  "expected": [
+   {
+    "agent": "claim",
+    "quote": "We roast within 12 hours of shipping"
+   }
+  ]
+ },
+ {
+  "id": 126,
+  "text": "The only coffee you will ever need.",
+  "expected": [
+   {
+    "agent": "claim",
+    "quote": "The only coffee you will ever need"
+   }
+  ]
+ },
+ {
+  "id": 127,
+  "text": "Our beans come from 400 farms.",
+  "expected": []
+ },
+ {
+  "id": 128,
+  "text": "Guaranteed to be the smoothest cup in town.",
+  "expected": [
+   {
+    "agent": "claim",
+    "quote": "Guaranteed to be the smoothest cup in town"
+   }
+  ]
+ },
+ {
+  "id": 129,
+  "text": "DON'T MISS OUT: our consumers say it is the best coffee in the world!!!",
+  "expected": [
+   {
+    "agent": "term",
+    "quote": "consumers"
+   },
+   {
+    "agent": "claim",
+    "quote": "it is the best coffee in the world"
+   },
+   {
+    "agent": "tone",
+    "quote": "DON'T MISS OUT"
+   },
+   {
+    "agent": "tone",
+    "quote": "!!!"
+   }
+  ]
+ },
+ {
+  "id": 130,
+  "text": "Cheap beans? Never. Joe approved this blend.",
+  "expected": [
+   {
+    "agent": "term",
+    "quote": "Cheap beans"
+   },
+   {
+    "agent": "term",
+    "quote": "Joe"
+   }
+  ]
+ }
+]
