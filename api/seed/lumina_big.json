@@ -48,7 +48,11 @@
         "java",
         "joe"
       ],
-      "reason": "Casual slang is off-brand (Terminology \u00a72.1)."
+      "reason": "Casual slang is off-brand (Terminology \u00a72.1).",
+      "allowed_contexts": [
+        "Java developers",
+        "Java programming"
+      ]
     },
     {
       "id": "t_2",

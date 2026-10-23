@@ -162,3 +162,13 @@ test('queue shows delta between the last two revisions; analytics exposes dashbo
   assert.equal((await t.call('creator', 'GET', '/analytics/summary')).status, 403);
   await t.close();
 });
+
+test('validateBig keeps and sanitises allowed_contexts on glossary terms, and omits the field when empty', () => {
+  const big = { ...GOOD_BIG, glossary: [{ id: 't_1', approved: 'coffee beans', banned: ['java'], reason: 'slang', allowed_contexts: ['Java developers', '  ', 5, 'x'.repeat(200)] }, { id: 't_2', approved: 'customers', banned: ['users'], reason: 'r' }] };
+  const out = validateBig(big, { brandId: 'lumina', version: 2 });
+  assert.ok(out.ok);
+  assert.deepEqual(out.big.glossary[0].allowed_contexts.slice(0, 1), ['Java developers']);
+  assert.equal(out.big.glossary[0].allowed_contexts.length, 2);       // blanks and non-strings are dropped, long text is trimmed
+  assert.ok(out.big.glossary[0].allowed_contexts[1].length <= 80);
+  assert.ok(!('allowed_contexts' in out.big.glossary[1]));
+});

@@ -129,11 +129,12 @@ export default function Brand() {
 
           <div className="card" style={{ overflowX: 'auto' }}>
             <b>Approved terms ({draft.glossary.length})</b>
-            <table style={{ width: '100%' }}><thead><tr><th>Approved</th><th>Banned variants (comma separated)</th><th>Reason</th><th><span className="sr-only">Actions</span></th></tr></thead>
+            <table style={{ width: '100%' }}><thead><tr><th>Approved</th><th>Banned variants (comma separated)</th><th>Allowed contexts (comma separated)</th><th>Reason</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>{draft.glossary.map((g, i) => (
                 <tr key={g.id}>
                   <td><input aria-label="Approved term" value={g.approved} onChange={(e) => set('glossary', i, { approved: e.target.value })} /></td>
                   <td><input aria-label="Banned variants" defaultValue={csv(g.banned)} onBlur={(e) => set('glossary', i, { banned: split(e.target.value, /,/) })} /></td>
+                  <td><input aria-label="Allowed contexts" placeholder="e.g. Java developers" defaultValue={csv(g.allowed_contexts)} onBlur={(e) => set('glossary', i, { allowed_contexts: split(e.target.value, /,/) })} /></td>
                   <td><input aria-label="Reason" style={{ minWidth: 220 }} value={g.reason} onChange={(e) => set('glossary', i, { reason: e.target.value })} /></td>
                   <td><button onClick={() => del('glossary', i)} aria-label={`Delete term ${g.id}`}>Delete</button></td>
                 </tr>))}</tbody></table>
@@ -164,7 +165,7 @@ export default function Brand() {
           <summary><b>What reviews are checked against (v{info.current.version})</b></summary>
           <p className="muted">Voice: {csv(info.current.tone_profile.descriptors)}</p>
           <ul>{info.current.rules.map((r) => <li key={r.id}><b>{r.clause_ref}</b> ({r.type}, {r.severity}): {r.text}</li>)}</ul>
-          <ul>{info.current.glossary.map((g) => <li key={g.id}>Say “{g.approved}”, not {g.banned.map((b) => `“${b}”`).join(' or ')}</li>)}</ul>
+          <ul>{info.current.glossary.map((g) => <li key={g.id}>Say “{g.approved}”, not {g.banned.map((b) => `“${b}”`).join(' or ')}{g.allowed_contexts?.length ? ` (fine in: ${g.allowed_contexts.join(', ')})` : ''}</li>)}</ul>
           <ul>{info.current.claims.map((c) => <li key={c.id}>{c.text} <span className="muted">({c.source_doc}{c.page ? `, p. ${c.page}` : ''})</span></li>)}</ul>
         </details>)}
     </div>

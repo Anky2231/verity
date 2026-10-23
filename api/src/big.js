@@ -18,6 +18,8 @@ export function validateBig(input, { brandId, version }) {
   });
   const glossary = list(input?.glossary, 500).map((g, i) => {
     const x = { id: str(g.id, 40), approved: str(g.approved, 80), banned: list(g.banned, 30).map((b) => str(b, 80)).filter(Boolean), reason: str(g.reason, 300) };
+    const ctx = list(g.allowed_contexts, 20).map((c) => str(c, 80)).filter(Boolean);
+    if (ctx.length) x.allowed_contexts = ctx;
     uniq(x.id, `term ${i + 1}`);
     if (!x.approved) errors.push(`term ${x.id || i + 1}: approved wording is required`);
     if (!x.banned.length) errors.push(`term ${x.id || i + 1}: at least one banned variant is required`);

@@ -17,7 +17,7 @@ SAMPLE_BIG = {
          "text": "Only make product claims listed in the approved claims register. No unqualified superlatives."},
     ],
     "glossary": [
-        {"id": "t_1", "approved": "coffee beans", "banned": ["java", "joe"], "reason": "Casual slang is off-brand (Terminology §2.1)."},
+        {"id": "t_1", "approved": "coffee beans", "banned": ["java", "joe"], "reason": "Casual slang is off-brand (Terminology §2.1).", "allowed_contexts": ["Java developers", "Java programming"]},
         {"id": "t_2", "approved": "customers", "banned": ["consumers", "users"], "reason": "We say 'customers' (Terminology §2.3)."},
         {"id": "t_3", "approved": "ethically sourced", "banned": ["cheap beans", "bargain beans"], "reason": "Never frame sourcing around price (Terminology §2.5)."},
     ],

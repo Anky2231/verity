@@ -27,7 +27,7 @@
       "items": {
         "type": "object",
         "required": ["id", "approved", "banned"],
-        "properties": { "id": {"type":"string"}, "approved": {"type":"string"}, "banned": {"type":"array","items":{"type":"string"}}, "reason": {"type":"string"} }
+        "properties": { "id": {"type":"string"}, "approved": {"type":"string"}, "banned": {"type":"array","items":{"type":"string"}}, "reason": {"type":"string"}, "allowed_contexts": {"type":"array","items":{"type":"string"},"description":"Phrases in which a banned word is acceptable (for example Java developers); TermGuard skips matches inside them."} }
       }
     },
     "claims": {
