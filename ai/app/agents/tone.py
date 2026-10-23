@@ -59,36 +59,71 @@ def _prompt(text: str, big: dict) -> tuple[str, str]:
     return system, user
 
 
+# --- Basic-mode lexicons (used only when no LLM is configured). Each list is a category of off-voice writing. ---
+_ACRONYMS = {"USA", "USD", "FAQ", "FAQS", "NASA", "PDF", "HTML", "SEO", "CEO", "CTO", "ASAP", "FYI", "COVID", "UNICEF", "ETA"}
+_JARGON = (r"(?:leverag(?:e|es|ed|ing)|synerg(?:y|ies|istic|ize|izing)|best-in-class|world-class|paradigm|holistic|actionable|"
+           r"seamless(?:ly)?|cutting-edge|next-level|disrupt\w*|ecosystem|value-add)")
+_HYPE = (r"(?:revolution(?:ary|ize|ise|izing|ising)?|game-?chang\w+|unbeatable|unparalleled|unrival+ed|mind-blowing|incredible|amazing|"
+         r"ultimate|second to none)")
+# Broader corporate-speak idioms are weaker evidence, so they are reported below the 0.6 cutoff: shown, but advisory.
+_SOFT = r"(?:empower(?:s|ed|ing|ment)?|redefin(?:e|es|ed|ing)|(?:thrilled|delighted|proud|excited) to (?:announce|unveil|introduce))"
+_PRESSURE = (r"(?:act now|don['\u2019]t miss out|limited time(?: only)?|last chance|hurry|while supplies last|before it['\u2019]s too late|"
+             r"once in a lifetime|you won['\u2019]t believe|now or never|today only|(?:the )?last chance)")
+_EVER = r"(?:most|best|greatest|finest)\b[^.!?,]{0,40}\bever\b[^.!?,]*"
+
+
+def _tone_finding(rule_id, cite, m, text, conf, sev, why, sug, trim=True):
+    quote = m.group(0).rstrip(" ,;:.!?") if trim else m.group(0)   # clause-long matches drop trailing punctuation
+    return Finding(agent="tone", rule_id=rule_id, clause_citation=cite, span=Span(start=m.start(), end=m.start() + len(quote)),
+                   quoted_text=quote, confidence=conf, severity=sev, explanation=why, suggestion=sug)
+
+
+def _drop_contained(findings: list[Finding]) -> list[Finding]:
+    """If one finding of a rule sits inside a longer one of the same rule, keep only the longer."""
+    keep = []
+    for f in findings:
+        inside = any(g is not f and g.rule_id == f.rule_id and g.span.start <= f.span.start and f.span.end <= g.span.end
+                     and (g.span.end - g.span.start) > (f.span.end - f.span.start) for g in findings)
+        if not inside:
+            keep.append(f)
+    return keep
+
+
 def _fallback(text: str, big: dict) -> list[Finding]:
     """Heuristic stand-in when no LLM is available. Callers label the result as fallback."""
-    out = []
-    for m in re.finditer(r"!{2,}|\b[A-Z]{4,}\b", text):
-        out.append(Finding(agent="tone", rule_id="r_voice_2", clause_citation="Voice §1.4",
-                           span=Span(start=m.start(), end=m.end()), quoted_text=m.group(0), confidence=0.7,
-                           severity="low", explanation="Excess exclamation or all-caps emphasis is off-voice.",
-                           suggestion="Use a single exclamation mark at most."))
-    for m in re.finditer(r"\b(leverage|synergistic|synergy|best-in-class|world-class|paradigm|holistic|actionable|"
-                         r"seamless|cutting-edge|next-level|disrupt\w*)\b[^.!?,]*", text, re.IGNORECASE):
-        q = m.group(0).strip()
-        out.append(Finding(agent="tone", rule_id="r_voice_1", clause_citation="Voice §1.2",
-                           span=Span(start=m.start(), end=m.start() + len(q)), quoted_text=q, confidence=0.75,
-                           severity="medium", explanation="Corporate jargon conflicts with our plain-spoken voice.",
-                           suggestion="Say it simply, e.g. 'use' instead of 'leverage'."))
-    for m in re.finditer(r"\b(revolutionary|game-changing|unbeatable|unparalleled|mind-blowing|incredible|amazing|ultimate)\b",
-                         text, re.IGNORECASE):
-        out.append(Finding(agent="tone", rule_id="r_voice_1", clause_citation="Voice §1.2",
-                           span=Span(start=m.start(), end=m.end()), quoted_text=m.group(0), confidence=0.65,
-                           severity="medium", explanation="Hype language is not our confident-but-never-boastful voice.",
-                           suggestion="Describe what is actually good about it, plainly."))
+    out: list[Finding] = []
+    # Shouting: a run of three or more ALL-CAPS words is one finding; a lone ALL-CAPS word needs five letters and no acronym.
+    for m in re.finditer(r"\b[A-Z][A-Z'\u2019]+(?:[ ]+[A-Z][A-Z'\u2019]+){2,}", text):
+        out.append(_tone_finding("r_voice_2", "Voice §1.4", m, text, 0.7, "low",
+                                 "A run of capital letters reads as shouting; the voice avoids all-caps emphasis.", "Use normal capitalisation."))
+    for m in re.finditer(r"\b[A-Z]{5,}\b", text):
+        if m.group(0) not in _ACRONYMS:
+            out.append(_tone_finding("r_voice_2", "Voice §1.4", m, text, 0.7, "low",
+                                     "All-caps emphasis is off-voice.", "Use normal capitalisation."))
+    for m in re.finditer(r"!{2,}", text):
+        out.append(_tone_finding("r_voice_2", "Voice §1.4", m, text, 0.7, "low",
+                                 "Excess exclamation or all-caps emphasis is off-voice.", "Use a single exclamation mark at most.", trim=False))
     # More than one exclamation mark in a piece (the first single one is allowed; runs are flagged above).
     flagged = [(f.span.start, f.span.end) for f in out]
-    singles = [m for m in re.finditer(r"!", text) if not any(a <= m.start() < b for a, b in flagged)]
-    for m in singles[1:]:
-        out.append(Finding(agent="tone", rule_id="r_voice_2", clause_citation="Voice §1.4",
-                           span=Span(start=m.start(), end=m.end()), quoted_text="!", confidence=0.6,
-                           severity="low", explanation="At most one exclamation mark per piece.",
-                           suggestion="Use a full stop instead."))
-    return out
+    for m in [m for m in re.finditer(r"!", text) if not any(a <= m.start() < b for a, b in flagged)][1:]:
+        out.append(_tone_finding("r_voice_2", "Voice §1.4", m, text, 0.6, "low", "At most one exclamation mark per piece.", "Use a full stop instead.", trim=False))
+    # Jargon runs to the end of the clause, as before.
+    for m in re.finditer(rf"\b{_JARGON}\b[^.!?,]*", text, re.IGNORECASE):
+        out.append(_tone_finding("r_voice_1", "Voice §1.2", m, text, 0.75, "medium",
+                                 "Corporate jargon conflicts with our plain-spoken voice.", "Say it simply, e.g. 'use' instead of 'leverage'."))
+    for m in re.finditer(rf"\b{_HYPE}\b", text, re.IGNORECASE):
+        out.append(_tone_finding("r_voice_1", "Voice §1.2", m, text, 0.65, "medium",
+                                 "Hype language is not our confident-but-never-boastful voice.", "Describe what is actually good about it, plainly."))
+    for m in re.finditer(rf"\b{_SOFT}\b", text, re.IGNORECASE):
+        out.append(_tone_finding("r_voice_1", "Voice §1.2", m, text, 0.58, "low",
+                                 "This reads as corporate boilerplate; consider plainer wording.", "Say it the way you would say it to a customer."))
+    for m in re.finditer(rf"\b{_EVER}", text, re.IGNORECASE):
+        out.append(_tone_finding("r_voice_1", "Voice §1.2", m, text, 0.65, "medium",
+                                 "Sweeping 'best ever' wording is boastful.", "Say what is good about it, plainly."))
+    for m in re.finditer(rf"\b{_PRESSURE}\b", text, re.IGNORECASE):
+        out.append(_tone_finding("r_voice_1", "Voice §1.2", m, text, 0.65, "medium",
+                                 "Pressure and urgency wording is not our warm, plain-spoken voice.", "Invite, do not push: say what is on offer and let people decide."))
+    return _drop_contained(out)
 
 
 def run(text: str, big: dict, llm: LlmFn | None = None) -> tuple[list[Finding], dict]:
