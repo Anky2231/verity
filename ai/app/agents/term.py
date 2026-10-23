@@ -1,9 +1,10 @@
 """TermGuard: deterministic glossary enforcement (fast, zero hallucination).
 
 Beyond exact matches it recognises the obvious variants of a banned term: singular/plural, hyphen, dash or extra-space
-spellings of multi-word terms ("cheap-beans", "cheap  beans", "bargain bean"). Variants are reported with slightly lower
-confidence than the exact form the brand listed. A glossary entry may also carry `allowed_contexts`: phrases in which the
-word is fine ("Java developers"), so a banned slang word is not flagged when it means something else.
+spellings of multi-word terms ("cheap-beans", "cheap  beans", "bargain bean"). A hyphen or spacing difference is the same
+term, so it keeps the full confidence; a singular or plural form the brand did not list is reported at 0.85 instead
+of 0.95. A glossary entry may also carry `allowed_contexts`: phrases in which the word is fine ("Java developers"),
+so a banned slang word is not flagged when it means something else.
 """
 import re
 from ..models import Finding, Span
@@ -37,8 +38,15 @@ def _is_plural(word: str) -> bool:
     return len(w) > 3 and w.endswith("s") and not w.endswith("ss")
 
 
-def _replacement(matched: str, listed: str, approved: str) -> str:
-    """Approved wording, adjusted to the match: same capitalisation, and singular where the writer used singular."""
+def _starts_sentence(text: str, pos: int) -> bool:
+    before = text[:pos].rstrip(" \t\"'\u201c\u2018(")
+    return not before or before[-1] in ".!?:\n"
+
+
+def _replacement(matched: str, listed: str, approved: str, sentence_start: bool = True) -> str:
+    """Approved wording, adjusted to the match: capitalised only at the start of a sentence (or all caps when the
+    writer shouted), and singular where the writer used singular. A capital in mid-sentence, as in 'Java', is not a
+    reason to capitalise the replacement."""
     out = approved
     if _is_plural(listed) and not _is_plural(matched) and _is_plural(approved):
         out = approved[:-1]
@@ -46,7 +54,7 @@ def _replacement(matched: str, listed: str, approved: str) -> str:
         out = approved + "s"
     if len(matched) > 1 and matched.isupper():
         return out.upper()
-    if matched[:1].isupper():
+    if matched[:1].isupper() and sentence_start:
         return out[:1].upper() + out[1:]
     return out
 
@@ -79,5 +87,5 @@ def run(text: str, big: dict) -> list[Finding]:
                     span=Span(start=m.start(), end=m.end()), quoted_text=m.group(0),
                     confidence=EXACT_CONFIDENCE if exact else VARIANT_CONFIDENCE, severity="medium",
                     explanation=f"'{m.group(0)}' is not an approved term. {entry.get('reason', '')}".strip(),
-                    suggestion=entry["approved"], replacement=_replacement(m.group(0), banned, entry["approved"])))
+                    suggestion=entry["approved"], replacement=_replacement(m.group(0), banned, entry["approved"], _starts_sentence(text, m.start()))))
     return findings

@@ -63,3 +63,16 @@ def test_two_listed_variants_matching_the_same_words_give_one_finding():
 def test_a_glossary_entry_without_allowed_contexts_or_banned_words_is_safe():
     assert run("anything", {"glossary": []}) == []
     assert run("anything", {}) == []
+
+
+def test_replacement_is_capitalised_only_at_the_start_of_a_sentence():
+    assert pairs("Consumers first.") == [("Consumers", "Customers")]
+    assert pairs("Hello. Consumers first.") == [("Consumers", "Customers")]                 # after a full stop
+    assert pairs('She said: "Consumers first."') == [("Consumers", "Customers")]           # after an opening quote
+    assert pairs("We love Java at the cafe.") == [("Java", "coffee beans")]                  # mid-sentence capital stays lower case
+    assert pairs("Meet Joe at noon.") == [("Joe", "coffee beans")]
+
+
+def test_hyphen_spelling_keeps_full_confidence_but_unlisted_plural_forms_do_not():
+    assert [x.confidence for x in run("Try cheap-beans.")] == [0.95]
+    assert [x.confidence for x in run("Our consumer base.")] == [0.85]
