@@ -8,9 +8,10 @@
     "e2e": "node e2e/journey.mjs",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test test/spanMap.test.mjs",
+    "test": "node --test test/spanMap.test.mjs test/wake.test.mjs",
     "a11y": "node e2e/a11y.mjs",
-    "keyboard": "node e2e/keyboard.mjs"
+    "keyboard": "node e2e/keyboard.mjs",
+    "waking": "node e2e/waking.mjs"
   },
   "dependencies": {
     "@tiptap/core": "^2.27.3",
