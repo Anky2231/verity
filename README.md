@@ -138,14 +138,14 @@ VisualGuard, multi-brand workspaces and Brand Drift Intelligence, with design, d
 ## Team
 | Name | Role in Round 1 | Round 2 contribution |
 |---|---|---|
-| Swastik Sahu | Full-Stack Lead & AI/ML Engineer | |
+| Swastik Sahu | Full-Stack Lead & AI/ML Engineer | Project lead and integration: Next.js web app (review editor, queue, guideline builder, dashboard, audit trail), Node API (workflow, RBAC, hash-chained audit log, caching, streaming), AI agents and their evaluation, free deployment on Vercel, Render and Neon, CI, documentation, and review of teammates' pull requests. Built with AI assistance from Claude (see Disclosures) |
 | Akriti Tigga | Backend Engineer | |
-| Gayathri VS | Frontend Engineer & UI/UX Designer | |
+| Gayathri VS | Frontend Engineer & UI/UX Designer | Accessible reason dialog (focus handling, keyboard support, validation) replacing the browser's pop-ups in the review and queue pages, with end-to-end test updates |
 | Sakshi Kumari | AI / ML Engineer | |
 | Shivam Agarwal | Backend Engineer & DevOps | Optional BullMQ and Redis review-agent jobs, AI endpoints, queue tests and documentation |
 
 
-*(Add each member's Round 2 contribution here before submitting.)*
+*(Akriti Tigga's and Sakshi Kumari's contributions are added when their work is merged; a contribution is listed only if the repository shows it.)*
 
 Accessibility and usability: [docs/USABILITY.md](docs/USABILITY.md) (the usability test with outside participants has not been run yet)
 
