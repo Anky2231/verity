@@ -94,21 +94,25 @@ Open http://localhost:3000. No Docker is needed locally; set `DATABASE_URL` to u
 ## Tests and evaluation
 ```bash
 cd api && npm test            # 22 default-path tests + 3 Redis queue integration tests (skipped without REDIS_URL)
-cd ai  && .venv/bin/python -m pytest -q     # 35 tests: spans (unicode, repeats), merge, retries, extraction (real PDF/DOCX), streaming, calibration, prompt injection
+cd ai  && .venv/bin/python -m pytest -q     # 60 tests: spans, merge and scoring, term variants, tone lexicons, retrieval, extraction (real PDF/DOCX), streaming, calibration, prompt injection
 cd web && npm test && npm run lint          # span-mapping tests + lint
 cd web && npm run e2e         # 37 browser checks of the full journey on a running stack (needs Chrome)
 cd web && npm run a11y        # axe-core audit: 11 pages and states in light and dark mode (0 violations)
 cd web && npm run keyboard    # keyboard-only journey, tab order and reflow at 320 px / 200% zoom (15 checks)
-cd ai  && .venv/bin/python scripts/eval.py  # precision / recall on 30 annotated texts
+cd ai  && .venv/bin/python scripts/eval.py  # precision / recall on the dev and held-out sets (30 texts each)
+cd ai  && .venv/bin/python scripts/calibrate.py  # stated confidence vs measured precision
 ```
 CI runs all of these plus `npm audit` and `pip-audit` ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
-**Measured (ToneGuard in basic mode):**
-| Agent | Precision | Recall | Notes |
-|---|---|---|---|
-| TermGuard | 1.00 | 1.00 | Deterministic; the set is small and written from the glossary, so treat this as a regression check |
-| ClaimGuard | 0.90 | 1.00 | 9 true positives, 1 false positive ("best-in-class" counted as a claim), 0 misses. Before the retrieval upgrade on the same 30 texts: precision 0.83, recall 0.56 |
-| ToneGuard (basic mode) | 1.00 | 0.90 | Misses tone problems outside its word lists |
+**Measured (ToneGuard in basic mode).** Two annotated sets of 30 texts each: *dev* (used while building the agents) and *held-out* (written before the latest agent changes and never used to tune a rule or lexicon, so it is the fairer number).
+
+| Agent | Dev (precision / recall) | Held-out before | Held-out now | Notes |
+|---|---|---|---|---|
+| TermGuard | 1.00 / 1.00 | 0.75 / 0.60 | 0.83 / 1.00 | Now catches singular and plural forms and hyphen or extra-space spellings. The two remaining false positives are "Java" meaning the language and "Joe's Diner"; a brand lists such cases as allowed contexts, and the sample brand does not list these two |
+| ClaimGuard | 0.90 / 1.00 | 0.75 / 1.00 | 0.75 / 1.00 | Unchanged this round. Two held-out false positives |
+| ToneGuard (basic mode) | 1.00 / 1.00 | 1.00 / 0.67 | 0.79 / 1.00 | Recall rose by adding categories (shouting, pressure, hype, jargon forms); precision fell because some extra flags are correct but were not annotated. Held-out labels were not changed to hide this |
+
+**Calibration check** (`ai/scripts/calibrate.py`, 66 labelled findings): stated confidence against measured precision is 0.94 vs 0.91 for TermGuard, 0.83 vs 0.83 for ClaimGuard and 0.67 vs 0.88 for ToneGuard, so the hand-set values are about right to slightly cautious. The low-confidence boilerplate tier (0.58) measured 50% on 4 findings, which fits keeping it advisory. The sets are small and team-written, and the confidences are fixed numbers rather than model scores, so this is a sanity check, not proof.
 
 **Latency (rules mode, 1,032-word draft, 10 runs):** first agent result 1 ms median (3 ms max), full review 2 ms median (3 ms max). LLM-mode latency has not been measured yet; the targets are a first result under 10 s and a full review under 60 s. **Queue overhead (same 1,032-word size, built-in sample cycled to length, local AI + Redis 8.2.10 on Windows, 10 runs):** direct AI endpoint 165.5 ms median; BullMQ path 197.1 ms; added median latency 31.5 ms. Reproduce with `cd api && npm run benchmark:queue` while Redis and the AI service are running.
 
