@@ -94,9 +94,9 @@ Open http://localhost:3000. No Docker is needed locally; set `DATABASE_URL` to u
 
 ## Tests and evaluation
 ```bash
-cd api && npm test            # 22 default-path tests + 3 Redis queue integration tests (skipped without REDIS_URL)
-cd ai  && .venv/bin/python -m pytest -q     # 60 tests: spans, merge and scoring, term variants, tone lexicons, retrieval, extraction (real PDF/DOCX), streaming, calibration, prompt injection
-cd web && npm test && npm run lint          # span-mapping tests + lint
+cd api && npm test            # 48 default-path tests (workflow, RBAC, validation, HTTP headers, OpenAPI contract) + 3 Redis queue integration tests (skipped without REDIS_URL)
+cd ai  && .venv/bin/python -m pytest -q     # 62 tests: spans, merge and scoring, term variants, tone lexicons, retrieval, extraction (real PDF/DOCX), streaming, calibration, prompt injection
+cd web && npm test && npm run lint          # span-mapping and wake-up polling tests (7) + lint
 cd web && npm run e2e         # 37 browser checks of the full journey on a running stack (needs Chrome)
 cd web && npm run a11y        # axe-core audit: 11 pages and states in light and dark mode (0 violations)
 cd web && npm run keyboard    # keyboard-only journey, tab order and reflow at 320 px / 200% zoom (15 checks)
