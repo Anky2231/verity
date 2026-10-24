@@ -71,3 +71,43 @@ test('the rules are plain functions that return null when the input is fine', ()
   assert.equal(validateDecision({ decision: 'manual', flag_key: 'k', revision: 2 }), null);
   assert.equal(validateReason(undefined), null);
 });
+
+test('GET /reviews: no limit returns the plain array; limit pages through every review once, newest first', async () => {
+  for (let i = 0; i < 7; i++) await call('creator', 'POST', '/reviews', { title: `Page ${i}` });
+  const all = await call('creator', 'GET', '/reviews');
+  assert.ok(Array.isArray(all.body));
+  const seen = []; let cursor = null, pages = 0;
+  do {
+    const r = await call('creator', 'GET', `/reviews?limit=3${cursor ? `&cursor=${cursor}` : ''}`);
+    assert.equal(r.status, 200); assert.ok(r.body.items.length <= 3);
+    seen.push(...r.body.items.map((x) => x.id)); cursor = r.body.next_cursor; pages++;
+  } while (cursor);
+  assert.deepEqual(seen, all.body.map((x) => x.id), 'pages concatenate to exactly the unpaged list, in the same order');
+  assert.equal(new Set(seen).size, seen.length);
+  assert.ok(pages >= 3);
+});
+
+test('GET /reviews: bad limit or cursor is a 400 with a reason', async () => {
+  for (const q of ['limit=0', 'limit=201', 'limit=abc', 'limit=1.5', 'cursor=whatever', 'limit=2&cursor=!!!'])
+    assert.equal((await call('creator', 'GET', `/reviews?${q}`)).status, 400, q);
+  assert.equal((await call('creator', 'GET', '/reviews?limit=0')).body.error, 'invalid_limit');
+});
+
+test('GET /audit: pages walk backwards through the whole trail with no gaps or repeats', async () => {
+  const everything = await call('manager', 'GET', '/audit');
+  assert.ok(Array.isArray(everything.body) && everything.body.length > 5);
+  const ids = []; let before = null;
+  do {
+    const r = await call('manager', 'GET', `/audit?limit=4${before ? `&before_id=${before}` : ''}`);
+    assert.equal(r.status, 200);
+    const page = r.body.items.map((x) => x.id);
+    assert.deepEqual(page, [...page].sort((a, b) => a - b), 'each page is oldest first');
+    ids.unshift(...page); before = r.body.next_before_id;
+  } while (before);
+  assert.deepEqual(ids, everything.body.map((x) => x.id));
+});
+
+test('GET /audit: invalid paging and filter values are 400s', async () => {
+  for (const q of ['limit=0', 'limit=1001', 'before_id=5', 'limit=2&before_id=x', 'review_id=abc'])
+    assert.equal((await call('manager', 'GET', `/audit?${q}`)).status, 400, q);
+});

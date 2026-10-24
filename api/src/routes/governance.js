@@ -10,18 +10,37 @@ export function governanceRouter({ db }) {
   const r = Router();
   const guard = [requireAuth, requireRole('manager', 'approver', 'admin')];
 
+  // Without `limit` this returns every row (oldest first). With `limit` it returns { items, next_before_id }: the newest
+  // `limit` rows older than `before_id`, still oldest first; pass next_before_id as `before_id` for the next page back.
   r.get('/audit', guard, async (req, res) => {
-    const rows = await db.query(
-      `SELECT id, review_id, actor_id, actor_role, action, detail, ts, prev_hash, hash FROM audit_log
-       WHERE brand_id=$1 ${req.query.review_id ? 'AND review_id=$2' : ''} ORDER BY id`,
-      req.query.review_id ? [BRAND, Number(req.query.review_id)] : [BRAND]);
+    const paged = req.query.limit !== undefined;
+    const limitN = paged ? Number(req.query.limit) : null;
+    if (paged && (!Number.isInteger(limitN) || limitN < 1 || limitN > 1000))
+      return res.status(400).json({ error: 'invalid_limit', detail: 'limit must be a whole number from 1 to 1000' });
+    const before = req.query.before_id !== undefined ? Number(req.query.before_id) : null;
+    if (before !== null && (!paged || !Number.isInteger(before) || before < 1))
+      return res.status(400).json({ error: 'invalid_before_id', detail: 'before_id must be a whole number, used together with limit' });
+    if (req.query.review_id !== undefined && !Number.isInteger(Number(req.query.review_id)))
+      return res.status(400).json({ error: 'invalid_review_id', detail: 'review_id must be a whole number' });
+    const params = [BRAND], where = ['brand_id=$1'];
+    if (req.query.review_id !== undefined) { params.push(Number(req.query.review_id)); where.push(`review_id=$${params.length}`); }
+    if (before !== null) { params.push(before); where.push(`id < $${params.length}`); }
+    const cols = 'id, review_id, actor_id, actor_role, action, detail, ts, prev_hash, hash';
+    let rows, next = null;
+    if (paged) {
+      params.push(limitN + 1);
+      const newest = await db.query(`SELECT ${cols} FROM audit_log WHERE ${where.join(' AND ')} ORDER BY id DESC LIMIT $${params.length}`, params);
+      const more = newest.length > limitN;
+      rows = (more ? newest.slice(0, limitN) : newest).reverse();
+      next = more ? rows[0].id : null;
+    } else rows = await db.query(`SELECT ${cols} FROM audit_log WHERE ${where.join(' AND ')} ORDER BY id`, params);
     if (req.query.format === 'csv') {
       res.type('text/csv').attachment('verity-audit.csv');
       return res.send(['id,ts,review_id,actor_id,actor_role,action,detail,hash',
         ...rows.map((x) => [x.id, x.ts, x.review_id, x.actor_id, x.actor_role, x.action, JSON.stringify(x.detail), x.hash].map(csvCell).join(','))].join('\n'));
     }
     if (req.query.format === 'json') res.attachment('verity-audit.json');
-    res.json(rows);
+    res.json(paged ? { items: rows, next_before_id: next } : rows);
   });
 
   // Round 3 (VisualGuard) groundwork: the route exists and is role-guarded, the feature does not.

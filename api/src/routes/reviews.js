@@ -15,6 +15,11 @@ const norm = (t) => t.normalize('NFC').replace(/\r\n?/g, '\n').trim();
 
 const BRAND = 'lumina'; // single brand in Round 2; every query is already brand-scoped for Round 3
 const MAX_TEXT = 20000;
+const encodeCursor = (row) => Buffer.from(JSON.stringify({ t: new Date(row.updated_at).toISOString(), id: Number(row.id) })).toString('base64url');
+function decodeCursor(c) {
+  try { const o = JSON.parse(Buffer.from(c, 'base64url').toString('utf8')); return Number.isInteger(o.id) && !Number.isNaN(Date.parse(o.t)) ? o : null; }
+  catch { return null; }
+}
 const flagCount = (result) => (result?.highlights ?? []).reduce((n, h) => n + h.findings.length, 0);
 
 export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
@@ -46,21 +51,39 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
     res.status(201).json(row);
   }));
 
+  // Without `limit` this returns every review as a plain array (what the web app uses). With `limit` it returns
+  // { items, next_cursor } in keyset pages: pass next_cursor back as `cursor` for the following page.
   r.get('/', wrap(async (req, res) => {
-    const own = req.user.role === 'creator' ? 'AND r.creator_id = $2' : 'AND $2::text IS NOT NULL';
+    const paged = req.query.limit !== undefined;
+    const limitN = paged ? Number(req.query.limit) : null;
+    if (paged && (!Number.isInteger(limitN) || limitN < 1 || limitN > 200))
+      return res.status(400).json({ error: 'invalid_limit', detail: 'limit must be a whole number from 1 to 200' });
+    let after = null;
+    if (req.query.cursor !== undefined) {
+      after = decodeCursor(String(req.query.cursor));
+      if (!paged || !after) return res.status(400).json({ error: 'invalid_cursor', detail: 'cursor must be a next_cursor value returned with a limit' });
+    }
+    const params = [BRAND, req.user.sub];
+    const where = [`r.brand_id=$1`, req.user.role === 'creator' ? 'r.creator_id = $2' : '$2::text IS NOT NULL'];
+    if (req.query.status) { params.push(req.query.status); where.push(`r.status=$${params.length}`); }
+    if (after) { params.push(after.t, after.id); where.push(`(r.updated_at, r.id) < ($${params.length - 1}::timestamptz, $${params.length}::bigint)`); }
+    if (paged) params.push(limitN + 1);
     const rows = await db.query(
       `SELECT r.*, u.name AS creator_name,
          (SELECT jsonb_build_object('number', v.number, 'score', v.score, 'flags', v.result) FROM revisions v
             WHERE v.review_id=r.id ORDER BY v.number DESC LIMIT 1) AS latest,
          (SELECT v.result FROM revisions v WHERE v.review_id=r.id ORDER BY v.number DESC OFFSET 1 LIMIT 1) AS prev
        FROM reviews r JOIN users u ON u.id=r.creator_id
-       WHERE r.brand_id=$1 ${own} ${req.query.status ? 'AND r.status=$3' : ''}
-       ORDER BY r.updated_at DESC`,
-      req.query.status ? [BRAND, req.user.sub, req.query.status] : [BRAND, req.user.sub]);
-    res.json(rows.map(({ latest, prev, ...x }) => ({
+       WHERE ${where.join(' AND ')}
+       ORDER BY r.updated_at DESC, r.id DESC${paged ? ` LIMIT $${params.length}` : ''}`, params);
+    const more = paged && rows.length > limitN;
+    const page = more ? rows.slice(0, limitN) : rows;
+    const items = page.map(({ latest, prev, ...x }) => ({
       ...x, latest_revision: latest?.number ?? null, score: latest?.score ?? null, flag_count: latest ? flagCount(latest.flags) : 0,
       delta: latest && prev ? flagCount(latest.flags) - flagCount(prev) : null,
-      actions: nextActions(x.status, req.user.role) })));
+      actions: nextActions(x.status, req.user.role) }));
+    if (!paged) return res.json(items);
+    res.json({ items, next_cursor: more ? encodeCursor(page[page.length - 1]) : null });
   }));
 
   r.get('/:id', wrap(async (req, res) => {
