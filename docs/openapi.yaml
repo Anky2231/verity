@@ -1,0 +1,543 @@
+openapi: 3.1.0
+info:
+  title: Verity API
+  version: 0.2.0
+  summary: Gateway for the Verity brand-governance demo
+  description: |
+    The REST API behind Verity. It signs demo logins, enforces roles on the server, stores reviews, revisions, decisions and
+    the hash-chained audit log, and calls the AI service for the agents.
+
+    - Authenticate with `POST /auth/demo-login`, then send `Authorization: Bearer <token>`.
+    - `x-roles` on each operation lists the roles the route accepts. A few routes (decisions, transitions) also apply a finer
+      rule inside the handler, for example that only a manager may override a flag; those answer 403 `forbidden`.
+    - Every response carries `X-Request-Id`. Send your own (8 to 64 letters, digits, `.`, `_`, `-`) to correlate logs.
+    - Errors are `{ "error": "<code>", "detail": "<short reason>" }`.
+    - `GET /reviews` and `GET /audit` return the whole list unless you pass `limit`, which switches them to pages.
+  license: { name: MIT, identifier: MIT }
+servers:
+  - url: http://localhost:4000
+    description: Local development
+  - url: https://verity-api-f0xo.onrender.com
+    description: Hosted demo (free tier; the first request after a pause takes about 30 seconds)
+
+tags:
+  - { name: System, description: Health and demo login }
+  - { name: Reviews, description: 'Create, run, decide on and approve content' }
+  - { name: Brand, description: Brand guidelines (the BIG) and their versions }
+  - { name: Governance, description: Audit trail and analytics }
+  - { name: Notifications, description: In-app notifications }
+
+security:
+  - bearer: []
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [System]
+      summary: Liveness check
+      security: []
+      x-roles: [public]
+      responses:
+        '200': { description: The API is up, content: { application/json: { schema: { $ref: '#/components/schemas/Health' } } } }
+  /health/deep:
+    get:
+      operationId: getHealthDeep
+      tags: [System]
+      summary: Liveness check that also reports whether the AI service answers
+      security: []
+      x-roles: [public]
+      responses:
+        '200': { description: Status of the API and AI service, content: { application/json: { schema: { $ref: '#/components/schemas/DeepHealth' } } } }
+  /auth/demo-users:
+    get:
+      operationId: getAuthDemoUsers
+      tags: [System]
+      summary: The four seeded demo accounts
+      security: []
+      x-roles: [public]
+      responses:
+        '200': { description: Demo users, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/User' } } } } }
+  /auth/demo-login:
+    post:
+      operationId: postAuthDemoLogin
+      tags: [System]
+      summary: One-click login for a demo role (no password)
+      security: []
+      x-roles: [public]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, properties: { role: { $ref: '#/components/schemas/Role' }, userId: { type: string } } } } }
+      responses:
+        '200': { description: A signed token valid for 12 hours, content: { application/json: { schema: { type: object, required: [token, user], properties: { token: { type: string }, user: { $ref: '#/components/schemas/User' } } } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /me:
+    get:
+      operationId: getMe
+      tags: [System]
+      summary: The signed-in user, as read from the token
+      x-roles: [creator, manager, approver, admin]
+      responses:
+        '200': { description: Token claims, content: { application/json: { schema: { $ref: '#/components/schemas/Claims' } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /sample:
+    get:
+      operationId: getSample
+      tags: [System]
+      summary: The built-in sample post, fetched from the AI service
+      x-roles: [creator, manager, approver, admin]
+      responses:
+        '200': { description: Sample content, content: { application/json: { schema: { type: object } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '502': { $ref: '#/components/responses/AiUnavailable' }
+
+  /reviews:
+    get:
+      operationId: getReviews
+      tags: [Reviews]
+      summary: List reviews (creators see only their own)
+      description: Without `limit` the response is a plain array. With `limit` it is `{ items, next_cursor }`.
+      x-roles: [creator, manager, approver, admin]
+      parameters:
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/ReviewStatus' } }
+        - { name: limit, in: query, description: 'Page size, from 1 to 200', schema: { type: integer, minimum: 1, maximum: 200 } }
+        - { name: cursor, in: query, description: The `next_cursor` of the previous page; needs `limit`, schema: { type: string } }
+      responses:
+        '200':
+          description: Reviews, newest first
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { type: array, items: { $ref: '#/components/schemas/ReviewListItem' } }
+                  - { $ref: '#/components/schemas/ReviewPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      operationId: postReviews
+      tags: [Reviews]
+      summary: Create an empty review
+      x-roles: [creator, manager, admin]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, maxLength: 200 }
+                content_type: { $ref: '#/components/schemas/ContentType' }
+      responses:
+        '201': { description: The new review, content: { application/json: { schema: { $ref: '#/components/schemas/Review' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reviews/{id}:
+    get:
+      operationId: getReviewsById
+      tags: [Reviews]
+      summary: One review with its revisions, flag decisions and comments
+      x-roles: [creator, manager, approver, admin]
+      parameters: [{ $ref: '#/components/parameters/ReviewId' }]
+      responses:
+        '200': { description: The review, content: { application/json: { schema: { $ref: '#/components/schemas/ReviewDetail' } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /reviews/{id}/run:
+    post:
+      operationId: postReviewsByIdRun
+      tags: [Reviews]
+      summary: Run the agents on the text and store the result as the next revision
+      x-roles: [creator, manager, admin]
+      parameters: [{ $ref: '#/components/parameters/ReviewId' }]
+      requestBody: { $ref: '#/components/requestBodies/RunText' }
+      responses:
+        '200': { description: The stored revision with the agents' result, content: { application/json: { schema: { $ref: '#/components/schemas/RunResult' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { description: 'The text is longer than 20,000 characters', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '502': { $ref: '#/components/responses/AiUnavailable' }
+  /reviews/{id}/run/stream:
+    post:
+      operationId: postReviewsByIdRunStream
+      tags: [Reviews]
+      summary: Same as run, streamed as server-sent events
+      description: One `agent` event per finished agent, then `done` with the stored revision, or `error`.
+      x-roles: [creator, manager, admin]
+      parameters: [{ $ref: '#/components/parameters/ReviewId' }]
+      requestBody: { $ref: '#/components/requestBodies/RunText' }
+      responses:
+        '200': { description: An event stream, content: { text/event-stream: { schema: { type: string } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { description: 'The text is longer than 20,000 characters', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /reviews/{id}/decisions:
+    post:
+      operationId: postReviewsByIdDecisions
+      tags: [Reviews]
+      summary: Record a human decision on one flag
+      description: Disputing or overriding needs a `reason`. Creators may accept or dispute; managers may also override or add a manual flag; approvers may override or add a manual flag.
+      x-roles: [creator, manager, approver, admin]
+      parameters: [{ $ref: '#/components/parameters/ReviewId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, flag_key, revision]
+              properties:
+                decision: { enum: [accepted, disputed, overridden, manual] }
+                flag_key: { type: string, maxLength: 200 }
+                revision: { type: integer, minimum: 1 }
+                rule_id: { type: string }
+                agent: { type: string }
+                quoted_text: { type: string, maxLength: 2000 }
+                reason: { type: string, maxLength: 1000 }
+      responses:
+        '201': { description: The stored decision, content: { application/json: { schema: { $ref: '#/components/schemas/Decision' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /reviews/{id}/comments:
+    post:
+      operationId: postReviewsByIdComments
+      tags: [Reviews]
+      summary: Add a comment
+      x-roles: [creator, manager, approver, admin]
+      parameters: [{ $ref: '#/components/parameters/ReviewId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [body], properties: { body: { type: string, minLength: 1, maxLength: 2000 } } } } }
+      responses:
+        '201': { description: The stored comment, content: { application/json: { schema: { type: object } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /reviews/{id}/transition:
+    post:
+      operationId: postReviewsByIdTransition
+      tags: [Reviews]
+      summary: Move the review through the approval workflow
+      description: |
+        Actions and who may do them: `submit` (creator, manager, admin), `approve`, `escalate` and `reject` (manager, admin),
+        `final_approve` and `send_back` (approver, admin), `publish` (manager, approver, admin). `reject` and `send_back`
+        need a `reason`. Nobody can approve their own content.
+      x-roles: [creator, manager, approver, admin]
+      parameters: [{ $ref: '#/components/parameters/ReviewId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { enum: [submit, approve, escalate, reject, final_approve, send_back, publish] }
+                reason: { type: string, maxLength: 1000 }
+      responses:
+        '200': { description: The review in its new state, content: { application/json: { schema: { $ref: '#/components/schemas/Review' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /reviews/{id}/diff:
+    get:
+      operationId: getReviewsByIdDiff
+      tags: [Reviews]
+      summary: Word diff and compliance change between two revisions
+      x-roles: [creator, manager, approver, admin]
+      parameters:
+        - { $ref: '#/components/parameters/ReviewId' }
+        - { name: from, in: query, required: true, schema: { type: integer, minimum: 1 } }
+        - { name: to, in: query, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200': { description: The diff, content: { application/json: { schema: { type: object } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /brand:
+    get:
+      operationId: getBrand
+      tags: [Brand]
+      summary: The current guidelines and the list of versions
+      x-roles: [manager, approver, admin]
+      responses:
+        '200': { description: Brand and versions, content: { application/json: { schema: { type: object } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /brand/versions/{v}:
+    get:
+      operationId: getBrandVersionsByV
+      tags: [Brand]
+      summary: One published version of the guidelines
+      x-roles: [manager, approver, admin]
+      parameters: [{ name: v, in: path, required: true, schema: { type: integer, minimum: 1 } }]
+      responses:
+        '200': { description: The guidelines, content: { application/json: { schema: { $ref: '../schemas/big.schema.json' } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /brand/extract:
+    post:
+      operationId: postBrandExtract
+      tags: [Brand]
+      summary: Turn a guideline file (or the built-in sample) into a draft for the preview screen
+      description: Nothing is saved. Files up to about 5 MB, sent as base64.
+      x-roles: [manager, admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filename: { type: string }
+                content_base64: { type: string }
+                use_sample: { type: boolean }
+      responses:
+        '200': { description: A draft and notes about what was uncertain, content: { application/json: { schema: { type: object } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { description: The file is too large, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '422': { description: The file could not be read, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '502': { $ref: '#/components/responses/AiUnavailable' }
+  /brand/publish:
+    post:
+      operationId: postBrandPublish
+      tags: [Brand]
+      summary: Publish the guidelines as the next version
+      description: Old versions stay; reviews already running keep the version they started with.
+      x-roles: [manager, admin]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [big], properties: { big: { $ref: '../schemas/big.schema.json' } } } } }
+      responses:
+        '201': { description: The new version number and counts, content: { application/json: { schema: { type: object, properties: { version: { type: integer } } } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /audit:
+    get:
+      operationId: getAudit
+      tags: [Governance]
+      summary: The audit trail (oldest first)
+      description: Without `limit` every row is returned as an array. With `limit` the newest `limit` rows older than `before_id` are returned as `{ items, next_before_id }`.
+      x-roles: [manager, approver, admin]
+      parameters:
+        - { name: review_id, in: query, schema: { type: integer } }
+        - { name: format, in: query, schema: { enum: [json, csv] } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 1000 } }
+        - { name: before_id, in: query, description: Needs `limit`, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200':
+          description: Audit rows
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { type: array, items: { $ref: '#/components/schemas/AuditRow' } }
+                  - { $ref: '#/components/schemas/AuditPage' }
+            text/csv: { schema: { type: string } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /audit/verify:
+    get:
+      operationId: getAuditVerify
+      tags: [Governance]
+      summary: Recompute every hash in the audit chain
+      x-roles: [manager, approver, admin]
+      responses:
+        '200': { description: Chain status, content: { application/json: { schema: { type: object, required: [ok, checked], properties: { ok: { type: boolean }, checked: { type: integer }, brokenAt: { type: integer } } } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /analytics/summary:
+    get:
+      operationId: getAnalyticsSummary
+      tags: [Governance]
+      summary: Dashboard numbers, score trend and rule override rates
+      x-roles: [manager, approver, admin]
+      responses:
+        '200': { description: Summary, content: { application/json: { schema: { type: object } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /brand-assets:
+    post:
+      operationId: postBrandAssets
+      tags: [Brand]
+      summary: Upload a brand asset (Round 3, not built yet)
+      description: Role-guarded placeholder for VisualGuard; always answers 501.
+      x-roles: [manager, approver, admin]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '501': { description: Planned for Round 3, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /notifications:
+    get:
+      operationId: getNotifications
+      tags: [Notifications]
+      summary: The signed-in user's latest 30 notifications and the unread count
+      x-roles: [creator, manager, approver, admin]
+      responses:
+        '200': { description: Notifications, content: { application/json: { schema: { type: object, required: [unread, items], properties: { unread: { type: integer }, items: { type: array, items: { type: object } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /notifications/read:
+    post:
+      operationId: postNotificationsRead
+      tags: [Notifications]
+      summary: Mark all of the user's notifications as read
+      x-roles: [creator, manager, approver, admin]
+      responses:
+        '200': { description: Done, content: { application/json: { schema: { type: object, properties: { ok: { type: boolean } } } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT, description: Token from POST /auth/demo-login }
+  parameters:
+    ReviewId: { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+  requestBodies:
+    RunText:
+      required: true
+      content: { application/json: { schema: { type: object, required: [text], properties: { text: { type: string, minLength: 1, maxLength: 20000 } } } } }
+  responses:
+    BadRequest: { description: The request is invalid, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Unauthenticated: { description: 'No token, or an invalid or expired one', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Forbidden: { description: The role may not do this, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    NotFound: { description: 'No such item, or not visible to this user', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Conflict: { description: The review is in a state that does not allow this, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    RateLimited:
+      description: Too many runs this minute
+      headers: { Retry-After: { description: Seconds to wait, schema: { type: integer } } }
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    AiUnavailable: { description: The AI service did not answer, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string, description: A stable machine-readable code }
+        detail: { type: string, description: A short human-readable reason }
+    Role: { enum: [creator, manager, approver, admin] }
+    ContentType: { enum: [blog, social, email] }
+    ReviewStatus: { enum: [draft, submitted, changes_requested, escalated, approved, published] }
+    Health:
+      type: object
+      required: [ok, service]
+      properties: { ok: { type: boolean }, service: { type: string }, time: { type: string, format: date-time } }
+    DeepHealth:
+      type: object
+      required: [ok, api, ai]
+      properties: { ok: { type: boolean }, api: { const: up }, ai: { enum: [up, down, unconfigured] } }
+    User:
+      type: object
+      required: [id, name, email, role]
+      properties: { id: { type: string }, name: { type: string }, email: { type: string }, role: { $ref: '#/components/schemas/Role' } }
+    Claims:
+      type: object
+      properties: { sub: { type: string }, name: { type: string }, role: { $ref: '#/components/schemas/Role' }, iat: { type: integer }, exp: { type: integer } }
+    Review:
+      type: object
+      required: [id, title, status, content_type, creator_id, big_version]
+      properties:
+        id: { type: integer }
+        brand_id: { type: string }
+        big_version: { type: integer }
+        title: { type: string }
+        content_type: { $ref: '#/components/schemas/ContentType' }
+        creator_id: { type: string }
+        status: { $ref: '#/components/schemas/ReviewStatus' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Action:
+      type: object
+      properties: { action: { type: string }, reason: { type: boolean, description: Whether the action needs a reason } }
+    ReviewListItem:
+      allOf:
+        - { $ref: '#/components/schemas/Review' }
+        - type: object
+          properties:
+            creator_name: { type: string }
+            latest_revision: { type: [integer, 'null'] }
+            score: { type: [integer, 'null'] }
+            flag_count: { type: integer }
+            delta: { type: [integer, 'null'], description: Change in flag count since the previous revision }
+            actions: { type: array, items: { $ref: '#/components/schemas/Action' } }
+    ReviewPage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/ReviewListItem' } }
+        next_cursor: { type: [string, 'null'], description: Null on the last page }
+    ReviewDetail:
+      allOf:
+        - { $ref: '#/components/schemas/Review' }
+        - type: object
+          properties:
+            creator_name: { type: string }
+            revisions: { type: array, items: { type: object } }
+            decisions: { type: array, items: { $ref: '#/components/schemas/Decision' } }
+            comments: { type: array, items: { type: object } }
+            actions: { type: array, items: { $ref: '#/components/schemas/Action' } }
+    Decision:
+      type: object
+      properties:
+        id: { type: integer }
+        review_id: { type: integer }
+        revision_number: { type: integer }
+        flag_key: { type: string }
+        rule_id: { type: [string, 'null'] }
+        agent: { type: [string, 'null'] }
+        decision: { enum: [accepted, disputed, overridden, manual] }
+        reason: { type: [string, 'null'] }
+        actor_id: { type: string }
+    RunResult:
+      type: object
+      required: [revision, text, score]
+      properties:
+        revision: { type: integer }
+        text: { type: string }
+        score: { type: integer }
+        agents: { type: array, items: { type: object } }
+        highlights:
+          type: array
+          items:
+            type: object
+            properties:
+              span: { type: object, properties: { start: { type: integer }, end: { type: integer } } }
+              severity: { enum: [low, medium, high] }
+              findings: { type: array, items: { $ref: '../schemas/finding.schema.json' } }
+        timing: { type: object }
+    AuditRow:
+      type: object
+      required: [id, action, ts, prev_hash, hash]
+      properties:
+        id: { type: integer }
+        review_id: { type: [integer, 'null'] }
+        actor_id: { type: [string, 'null'] }
+        actor_role: { type: [string, 'null'] }
+        action: { type: string }
+        detail: { type: object }
+        ts: { type: string }
+        prev_hash: { type: string }
+        hash: { type: string }
+    AuditPage:
+      type: object
+      required: [items, next_before_id]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AuditRow' } }
+        next_before_id: { type: [integer, 'null'], description: Null when there is nothing older }

@@ -29,6 +29,8 @@ jobs:
         working-directory: .
       - run: npm ci || npm install
       - run: npm test
+      - name: Lint the OpenAPI spec
+        run: npx --yes @redocly/cli@2.71.0 lint ../docs/openapi.yaml
       - name: Run Redis queue integration tests
         run: npm test
         env:
