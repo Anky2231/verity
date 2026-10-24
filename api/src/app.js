@@ -7,10 +7,14 @@ import { brandRouter } from './routes/brand.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { signToken, requireAuth, requireRole } from './auth.js';
 import { createReviewQueue } from './queue.js';
+import { securityHeaders, requestLog } from './http.js';
 
-export function createApp({ db } = {}) {
+export function createApp({ db, log } = {}) {
   const app = express();
-  app.use(cors({ origin: process.env.WEB_ORIGIN || true }));
+  app.disable('x-powered-by');
+  app.use(securityHeaders);
+  app.use(requestLog(log));
+  app.use(cors({ origin: process.env.WEB_ORIGIN || true, exposedHeaders: ['X-Request-Id', 'Retry-After'] }));
   app.use(express.json({ limit: '2mb' }));
 
   app.get('/health', (_req, res) =>
