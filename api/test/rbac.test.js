@@ -45,3 +45,11 @@ test('approver cannot publish a brand guideline -> 403 (managers and admins only
     headers: { 'content-type': 'application/json', authorization: `Bearer ${await login('approver')}` }, body: '{}' });
   assert.equal(res.status, 403);
 });
+
+test('production refuses to start without a private JWT secret', async () => {
+  const { assertSecret } = await import('../src/auth.js');
+  assert.throws(() => assertSecret({ NODE_ENV: 'production' }), /JWT_SECRET/);
+  assert.throws(() => assertSecret({ NODE_ENV: 'production', JWT_SECRET: 'dev-only-secret' }), /JWT_SECRET/);
+  assert.doesNotThrow(() => assertSecret({ NODE_ENV: 'production', JWT_SECRET: 'a-long-private-value' }));
+  assert.doesNotThrow(() => assertSecret({}), 'local development keeps working without the variable');
+});

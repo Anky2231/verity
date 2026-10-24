@@ -1,8 +1,10 @@
 import { createApp } from './app.js';
+import { assertSecret } from './auth.js';
 import { openDb } from './db.js';
 import { seed } from './seed.js';
 import { seedHistory } from './seed-history.js';
 
+assertSecret();
 const db = await openDb();
 await seed(db);
 if (process.env.SEED_HISTORY !== 'off') await seedHistory(db);
