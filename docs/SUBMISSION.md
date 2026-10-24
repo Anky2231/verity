@@ -10,3 +10,5 @@
 8. [ ] **Team contribution table**: fill in each member's Round 2 work in the README. Names match Round 1 exactly: Swastik Sahu, Akriti Tigga, Gayathri VS, Sakshi Kumari, Shivam Agarwal.
 9. [ ] Any organiser form fields: re-read the Round 2 brief right before submitting.
 10. [ ] `docs/QA_SCRIPT.md` completed on the deployed URL, including the idle-for-an-hour cold start check.
+
+**Form answers:** paste-ready text for every field is in `docs/FORM_ANSWERS.md`. The updated project PDF is `docs/Verity_Round2_Project.pdf` (source `docs/project-summary.html`); upload it to Drive with "Anyone with the link" as Viewer.

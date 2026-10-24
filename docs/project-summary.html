@@ -1,0 +1,98 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Verity: Round 2 project summary</title>
+<style>
+@page{size:A4;margin:16mm 15mm}
+body{font:10.5pt/1.45 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;color:#16181d}
+h1{font-size:24pt;margin:0 0 2pt}h2{font-size:14pt;margin:16pt 0 5pt;border-bottom:1.5px solid #1d4ed8;padding-bottom:2pt;color:#1d4ed8}
+h3{font-size:11pt;margin:10pt 0 3pt}p{margin:4pt 0}ul{margin:3pt 0 3pt 16pt;padding:0}li{margin:1.5pt 0}
+table{border-collapse:collapse;width:100%;margin:6pt 0;font-size:9.5pt}th,td{border:1px solid #c8ccd4;padding:3.5pt 6pt;text-align:left;vertical-align:top}th{background:#eef2ff}
+.sub{color:#555;margin:0 0 8pt}.box{border:1px solid #1d4ed8;border-radius:6pt;padding:7pt 10pt;background:#f5f8ff;margin:8pt 0}
+.flow{display:flex;gap:6pt;align-items:stretch;margin:8pt 0}.flow div{flex:1;border:1px solid #1d4ed8;border-radius:5pt;padding:5pt;text-align:center;font-size:9pt}
+.flow span{align-self:center;color:#1d4ed8;font-weight:bold}code{font-size:9pt;background:#f1f2f4;padding:0 2pt}
+.pb{page-break-before:always}
+</style></head><body>
+<h1>Verity</h1>
+<p class="sub">Intelligent brand governance. Every word. Every pixel. On brand. · Team Merge Conflicts · Inkloom AI Hackathon, Brand Governance track · Round 2 updated project document</p>
+
+<div class="box">
+<b>Try it (no signup):</b> https://verity-two-delta.vercel.app → click <b>Start judge walkthrough</b>. A guide bar at the bottom walks through five steps in about five minutes.<br>
+<b>Roles to try:</b> Maya (Creator), Rajan (Manager), Anita (Approver), each one click on the landing page.<br>
+<b>Source code (public):</b> https://github.com/Swas00/verity<br>
+<b>Note:</b> the site runs on free hosting. If nobody used it for about 15 minutes, the first visit can take 30 to 60 seconds; the landing page says "Waking up the server" and signs you in by itself once ready.
+</div>
+
+<h2>1. What Verity does</h2>
+<p>Verity checks marketing content against a brand's guidelines and explains every flag with the clause it breaks, a confidence score and a suggested fix. People make the final call: a Creator, Manager, Approver workflow with a tamper-evident audit trail. Nothing is published automatically.</p>
+<div class="flow"><div><b>Manager</b><br>uploads guidelines, reviews extraction, publishes a version</div><span>→</span><div><b>Creator</b><br>writes content, runs the agents, fixes or disputes flags</div><span>→</span><div><b>Manager</b><br>approves, rejects or escalates</div><span>→</span><div><b>Approver</b><br>final sign-off</div><span>→</span><div><b>Audit trail</b><br>every step recorded</div></div>
+
+<h2>2. Finished and working on the live link</h2>
+<table><tr><th style="width:30%">Area</th><th>What works</th></tr>
+<tr><td>Guideline builder</td><td>Upload PDF, DOCX, TXT or MD (or use the sample). Extracts rules, approved terms, approved claims with source pages and a voice profile. Editable preview with notes on anything unclear. Publishing creates a new immutable version.</td></tr>
+<tr><td>Review editor</td><td>Highlight on every flagged span, severity by colour and underline style, flags follow the text as it is edited.</td></tr>
+<tr><td>Agents</td><td><b>TermGuard</b> (banned and approved terms, singular, plural and hyphen variants, allowed contexts). <b>ClaimGuard</b> (unsupported claims matched to the approved claims register with document and page, wrong numbers flagged). <b>ToneGuard</b> (labelled basic mode, see section 5). <b>MetaAgent</b> merges overlaps, ranks flags and computes a 0 to 100 score.</td></tr>
+<tr><td>Findings panel</td><td>Clause citation, quoted text, confidence bar, plain-English reason, suggested fix. Accept fix, edit, dispute (a written reason is required).</td></tr>
+<tr><td>Reliability</td><td>Results stream as each agent finishes. One failing agent never blocks the others. Result cache, rate limiting, labelled fallback result for the sample text if the AI service is down.</td></tr>
+<tr><td>Workflow</td><td>Submit, approve, reject with reason, escalate, final approval, send back, publish. Roles enforced on the server. Nobody can approve their own content. Queue with score, open flags, change since last revision and age. Comments and in-app notifications.</td></tr>
+<tr><td>Revisions and audit</td><td>Every run is an immutable revision with a word-level diff and compliance change. Audit log is append-only and hash-chained; "Verify chain" recomputes it; filter and export as CSV or JSON.</td></tr>
+<tr><td>Dashboard</td><td>Reviews, average score, time to approve, AI versus human flags, score trend, violations by agent, content type and creator, clauses reviewers keep overriding.</td></tr>
+<tr><td>Learning loop</td><td>A rule that reviewers dispute or override in at least half of 5 or more decisions gets a higher confidence cutoff; borderline flags become suggestions and stop lowering the score.</td></tr>
+<tr><td>Engineering</td><td>OpenAPI 3.1 reference for all 25 routes (checked against the code by a test), pagination, request ids and logging, security headers, input validation, optional BullMQ and Redis queue, server-waking message.</td></tr>
+<tr><td>Accessibility</td><td>Automated audit with no serious or critical violations in light and dark mode, keyboard-only journey, no horizontal scroll at 320 px or 200% zoom.</td></tr></table>
+
+<h2>3. Architecture and technology</h2>
+<table><tr><th style="width:18%">Service</th><th>Technology and role</th></tr>
+<tr><td>Web (Vercel)</td><td>Next.js 14, React 18, TipTap/ProseMirror. Interface only; every permission is re-checked by the API.</td></tr>
+<tr><td>API (Render, free)</td><td>Node.js and Express. JWT demo logins, role checks, workflow state machine, SSE streaming, cache, rate limiter, audit log, analytics, guideline versioning.</td></tr>
+<tr><td>AI service</td><td>Python FastAPI and Pydantic. Runs the agents in parallel and merges them. Same container as the API on Render.</td></tr>
+<tr><td>Database (Neon, free)</td><td>PostgreSQL with JSONB. <code>brand_id</code> on every table. Locally and in tests an in-process Postgres (PGlite).</td></tr>
+<tr><td>Queue (optional)</td><td>BullMQ and Redis run one job per agent when <code>REDIS_URL</code> is set; otherwise a direct pipeline runs. Not enabled on the live demo.</td></tr></table>
+<h3>Technically hard parts</h3>
+<ul>
+<li><b>Span integrity.</b> Models are poor at character offsets. Agents return the quoted text; the server computes and verifies the offsets, re-locates or drops mismatches; a mapping layer converts text offsets to editor positions. Tested with Unicode, repeated phrases and newlines.</li>
+<li><b>Tamper-evident audit log.</b> One SQL statement computes each hash from the previous row; a unique constraint stops forks under concurrency; triggers reject update, delete and truncate.</li>
+<li><b>Calibration from reviewer overrides,</b> per rule, with the effect visible on the dashboard.</li>
+<li><b>Graceful degradation.</b> Per-agent isolation, a circuit breaker around the optional queue, honest labels on every fallback.</li></ul>
+<h3>Measured results</h3>
+<table><tr><th>Agent</th><th>Dev set (precision / recall)</th><th>Held-out set (precision / recall)</th></tr>
+<tr><td>TermGuard</td><td>1.00 / 1.00</td><td>0.83 / 1.00</td></tr><tr><td>ClaimGuard</td><td>0.90 / 1.00</td><td>0.75 / 1.00</td></tr><tr><td>ToneGuard (basic mode)</td><td>1.00 / 1.00</td><td>0.79 / 1.00</td></tr></table>
+<p>Two annotated sets of 30 texts each, written by the team. The held-out set was not used to tune any rule and its labels were not changed to improve the numbers. Database indexes were measured on 20,000 generated reviews: first page of a review list 14 ms to 0.07 ms; one review's audit trail 6.7 ms to 0.01 ms. Tests: 48 API, 62 AI, 7 web unit and four browser suites, run by GitHub Actions on every push.</p>
+
+<h2>4. What changed from the Round 1 proposal, and why</h2>
+<table><tr><th style="width:24%">Round 1</th><th>Round 2</th><th style="width:36%">Why</th></tr>
+<tr><td>MongoDB</td><td>PostgreSQL JSONB</td><td>One database fewer; findings are JSON anyway.</td></tr>
+<tr><td>Pinecone</td><td>Lexical retrieval (BM25, weighted coverage)</td><td>Character n-gram vectors did worse on our data, and the claims register is small.</td></tr>
+<tr><td>Clerk</td><td>Own JWT with seeded demo users</td><td>Judges try every role in one click, no signup.</td></tr>
+<tr><td>Socket.IO</td><td>Server-sent events</td><td>Simpler, enough for one-way streaming.</td></tr>
+<tr><td>BullMQ and Redis</td><td>Optional, direct pipeline by default</td><td>The live demo works without Redis.</td></tr>
+<tr><td>Claude for ToneGuard</td><td>Rule-based basic mode live; LLM path built</td><td>Zero cost, cannot hit rate limits.</td></tr>
+<tr><td>AWS S3, Liveblocks</td><td>S3 deferred to Round 3; Liveblocks dropped</td><td>Images need VisualGuard; Liveblocks is outside the core workflow.</td></tr>
+<tr><td>LLM extraction</td><td>Rule-based extraction</td><td>Free and deterministic.</td></tr></table>
+<p>No new product features were added beyond the Round 1 set; the additions are engineering quality (API reference, pagination, indexes, logging, accessibility, the waking message).</p>
+
+<h2>5. What does NOT work yet</h2>
+<ul>
+<li>ToneGuard on the live demo is rule-based basic mode, not the LLM: it catches jargon, hype, shouting and pressure wording, not subtle voice problems. LLM latency has not been measured.</li>
+<li>Free hosting sleeps when idle; the first visit can take 30 to 60 seconds (the page says so).</li>
+<li>Demo data is shared: every visitor sees the same reviews and each other's changes.</li>
+<li>Known detection errors: ClaimGuard flags "only" in "Limited time only" and "best" in "best-in-class"; TermGuard flags "Java" meaning the language and "Joe's Diner" unless the brand lists them as allowed contexts. The test sets are small.</li>
+<li>Guideline extraction is rule-based and can miss unusual layouts; scanned (image-only) PDFs are not read.</li>
+<li>Email notifications are built but off; in-app notifications work.</li>
+<li>Cache and rate limiter are per server process. Sign-in is demo logins only.</li>
+<li>Dashboard summary queries read every review (about 50 to 90 ms at 20,000 reviews); not optimised further.</li>
+<li>No usability test with outside people and no screen-reader testing yet; automated accessibility checks and a keyboard-only run were done.</li>
+<li>Round 3 items not built: VisualGuard, multi-brand workspaces, Brand Drift Intelligence, tone embeddings.</li></ul>
+
+<h2>6. Three improvements for Round 3</h2>
+<table><tr><th style="width:20%">Improvement</th><th>What it changes for the user, and how it will be tested</th></tr>
+<tr><td><b>1. VisualGuard</b><br>image and logo compliance</td><td>A creator uploads a banner and gets the same kind of flag on the image, with the clause, before a manager sees it. Image embeddings against approved assets, palette check, logo clear-space and misuse checks, using the existing finding format with an image region. <b>Test:</b> at least 85% recall on a 30-image set, at most 10% false flags on compliant images. <b>In place:</b> <code>brand_assets</code> table, guarded upload route, <code>region</code> field.</td></tr>
+<tr><td><b>2. Multi-brand workspaces</b><br>agency mode</td><td>A manager switches between client brands, each with its own guidelines, reviews and analytics, and shares a read-only compliance report. Per-brand membership, isolation, a cross-brand contamination detector. <b>Test:</b> automated tests prove no cross-brand reads or writes; at least 80% of planted cross-brand samples flagged. <b>In place:</b> <code>brand_id</code> on every table, scoped queries, a second brand in the seed.</td></tr>
+<tr><td><b>3. Brand Drift Intelligence</b></td><td>A brand manager sees which teams and clauses drift over time and is alerted before violations pile up. Rolling-window tone analysis against the brand centroid, per-team drift score, weekly digest. <b>Test:</b> on a seeded history with planted drift, the alert fires within one window and not on a stable control series. <b>In place:</b> stored revision history, 40 seeded reviews, override-rate analysis.</td></tr></table>
+
+<h2>7. Team and disclosures</h2>
+<table><tr><th>Name</th><th>Round 1 role</th><th>Round 2 contribution (as shown by the repository)</th></tr>
+<tr><td>Swastik Sahu</td><td>Full-Stack Lead and AI/ML Engineer</td><td>Project lead and integration: web app, API, AI agents and evaluation, deployment, CI, documentation, review of pull requests.</td></tr>
+<tr><td>Akriti Tigga</td><td>Backend Engineer</td><td></td></tr>
+<tr><td>Gayathri VS</td><td>Frontend Engineer and UI/UX Designer</td><td>Accessible reason dialog (focus, keyboard, validation) with end-to-end test updates.</td></tr>
+<tr><td>Sakshi Kumari</td><td>AI / ML Engineer</td><td></td></tr>
+<tr><td>Shivam Agarwal</td><td>Backend Engineer and DevOps</td><td>Optional BullMQ and Redis queue, single-agent and merge endpoints, queue tests and benchmark, CI jobs with and without Redis, documentation.</td></tr></table>
+<p><b>AI assistance:</b> the team used Claude (Anthropic) while building, including Claude Code for writing and testing parts of the code, tests and documentation; the team directed and reviewed the work. <b>Licence:</b> MIT. <b>Demo data:</b> "Lumina Coffee Co." and all reviews, users and claims are fictional.</p>
+</body></html>
