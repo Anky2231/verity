@@ -15,7 +15,7 @@ Everything below has a free tier. Free-tier rules change, so confirm on each sit
 3. When asked for values:
    - `DATABASE_URL`: the Neon connection string from step 1.
    - `WEB_ORIGIN`: put the Vercel URL once you have it (step 3); a placeholder is fine for now.
-   - `JWT_SECRET` is generated for you.
+   - `JWT_SECRET` is generated for you. (The API refuses to start in production without a private one.)
 4. Wait for the deploy, then open `https://<service>.onrender.com/health/deep`. You want `"api":"up","ai":"up"`.
    If you see a Postgres SSL error in the logs, add the variable `PGSSL=1`.
 

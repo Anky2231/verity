@@ -1,4 +1,5 @@
 # Verity — Intelligent Brand Governance Platform
+[![ci](https://github.com/Swas00/verity/actions/workflows/ci.yml/badge.svg)](https://github.com/Swas00/verity/actions/workflows/ci.yml)
 **Team Merge Conflicts** · Inkloom AI Hackathon, Brand Governance track · Round 2
 
 > Every word. Every pixel. On brand.
@@ -50,7 +51,7 @@ flowchart LR
   A -- extract --> E
   classDef a fill:#eef,stroke:#88a
 ```
-More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · API reference: [docs/openapi.yaml](docs/openapi.yaml) (checked against the code by a test and linted in CI) · Database diagram and measured indexes: [docs/DATABASE.md](docs/DATABASE.md).
 
 ## The agents
 | Agent | Does | How |
