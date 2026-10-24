@@ -40,12 +40,6 @@ export function createApp({ db } = {}) {
 
   app.get('/me', requireAuth, (req, res) => res.json(req.user));
 
-  // Placeholder protected routes proving RBAC; real handlers replace these.
-  app.get('/manager/queue', requireAuth, requireRole('manager', 'approver', 'admin'), (_req, res) =>
-    res.json({ items: [] }));
-  app.get('/approver/escalations', requireAuth, requireRole('approver', 'admin'), (_req, res) =>
-    res.json({ items: [] }));
-
   const aiFetch = async (path, init = {}) => {
     const r = await fetch(`${process.env.AI_SERVICE_URL}${path}`, {
       ...init,
