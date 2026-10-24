@@ -1,0 +1,73 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createApp } from '../src/app.js';
+import { freshDb } from './helpers.js';
+import { seed } from '../src/seed.js';
+import { validateNewReview, validateComment, validateDecision, validateReason } from '../src/validate.js';
+
+process.env.REDIS_URL = '';
+let server, base, db;
+const tokens = {};
+test.before(async () => {
+  db = await freshDb(); await seed(db);
+  server = createApp({ db }).listen(0); await new Promise((r) => server.once('listening', r));
+  base = `http://127.0.0.1:${server.address().port}`;
+});
+test.after(async () => { server.close(); await db.close(); });
+
+async function call(role, method, path, body) {
+  tokens[role] ??= (await (await fetch(`${base}/auth/demo-login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ role }) })).json()).token;
+  const res = await fetch(`${base}${path}`, { method, headers: { 'content-type': 'application/json', authorization: `Bearer ${tokens[role]}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+  return { status: res.status, body: await res.json().catch(() => null) };
+}
+
+test('content_type accepts only blog, social and email', async () => {
+  for (const ok of ['blog', 'social', 'email']) assert.equal((await call('creator', 'POST', '/reviews', { title: 'T', content_type: ok })).status, 201);
+  const bad = await call('creator', 'POST', '/reviews', { title: 'T', content_type: 'billboard' });
+  assert.equal(bad.status, 400);
+  assert.equal(bad.body.error, 'invalid_content_type');
+  assert.match(bad.body.detail, /blog, social, email/);
+  assert.equal((await call('creator', 'POST', '/reviews', { title: 'T' })).status, 201, 'omitted content_type still defaults to blog');
+});
+
+test('a review title is capped at 200 characters and must be text', async () => {
+  assert.equal((await call('creator', 'POST', '/reviews', { title: 'x'.repeat(201) })).body.error, 'title_too_long');
+  assert.equal((await call('creator', 'POST', '/reviews', { title: 'x'.repeat(200) })).status, 201);
+  assert.equal((await call('creator', 'POST', '/reviews', { title: 42 })).body.error, 'invalid_title');
+});
+
+test('comments cannot be empty or longer than 2000 characters', async () => {
+  const { body: { id } } = await call('creator', 'POST', '/reviews', { title: 'C' });
+  assert.equal((await call('creator', 'POST', `/reviews/${id}/comments`, { body: '   ' })).body.error, 'body_required');
+  assert.equal((await call('creator', 'POST', `/reviews/${id}/comments`, { body: 7 })).body.error, 'body_required');
+  assert.equal((await call('creator', 'POST', `/reviews/${id}/comments`, { body: 'y'.repeat(2001) })).body.error, 'comment_too_long');
+  assert.equal((await call('creator', 'POST', `/reviews/${id}/comments`, { body: 'y'.repeat(2000) })).status, 201);
+});
+
+test('decision fields are validated before anything is stored', async () => {
+  const { body: { id } } = await call('creator', 'POST', '/reviews', { title: 'D' });
+  const post = (b) => call('creator', 'POST', `/reviews/${id}/decisions`, b);
+  assert.equal((await post({ decision: 'maybe', flag_key: 'k', revision: 1 })).body.error, 'invalid_decision');
+  assert.equal((await post({ decision: 'accepted', revision: 1 })).body.error, 'flag_key_and_revision_required');
+  assert.equal((await post({ decision: 'accepted', flag_key: 'k', revision: 0 })).body.error, 'flag_key_and_revision_required');
+  assert.equal((await post({ decision: 'accepted', flag_key: 'k', revision: 1.5 })).body.error, 'flag_key_and_revision_required');
+  assert.equal((await post({ decision: 'disputed', flag_key: 'k', revision: 1, reason: 'z'.repeat(1001) })).body.error, 'reason_too_long');
+  assert.equal((await post({ decision: 'disputed', flag_key: 'k', revision: 1 })).body.error, 'reason_required');
+  assert.equal((await post({ decision: 'accepted', flag_key: 'k', revision: 1, rule_id: {} })).body.error, 'invalid_rule_id');
+  assert.equal((await post({ decision: 'accepted', flag_key: 'k', revision: 1 })).status, 201);
+  assert.equal((await post({ decision: 'overridden', flag_key: 'k', revision: 1, reason: 'r' })).status, 403, 'role rules still apply to valid input');
+});
+
+test('a transition reason must be text and at most 1000 characters', async () => {
+  const { body: { id } } = await call('creator', 'POST', '/reviews', { title: 'R' });
+  assert.equal((await call('creator', 'POST', `/reviews/${id}/transition`, { action: 'submit', reason: 'q'.repeat(1001) })).body.error, 'reason_too_long');
+  assert.equal((await call('creator', 'POST', `/reviews/${id}/transition`, { action: 'submit', reason: {} })).body.error, 'invalid_reason');
+});
+
+test('the rules are plain functions that return null when the input is fine', () => {
+  assert.equal(validateNewReview({ title: 'ok', content_type: 'email' }), null);
+  assert.equal(validateNewReview(), null);
+  assert.equal(validateComment({ body: 'hi' }), null);
+  assert.equal(validateDecision({ decision: 'manual', flag_key: 'k', revision: 2 }), null);
+  assert.equal(validateReason(undefined), null);
+});

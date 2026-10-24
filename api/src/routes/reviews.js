@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import { computeCalibration } from '../calibration.js';
 import { LruCache, hashKey, rateLimiter } from '../limits.js';
 import { notify, idsWithRole } from '../notify.js';
+import { validateNewReview, validateComment, validateDecision, validateReason } from '../validate.js';
 
 // Precomputed result for the built-in sample only: used (and labelled) if the AI service is unreachable.
 const DEMO = JSON.parse(fs.readFileSync(new URL('../../seed/sample_result.json', import.meta.url), 'utf8'));
@@ -35,11 +36,12 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
   const wrap = (fn) => (req, res) => fn(req, res).catch((e) => { console.error(e); res.status(500).json({ error: 'server_error' }); });
 
   r.post('/', requireRole('creator', 'manager', 'admin'), wrap(async (req, res) => {
-    const title = String(req.body?.title ?? '').trim().slice(0, 200) || 'Untitled';
+    const invalid = validateNewReview(req.body); if (invalid) return res.status(400).json(invalid);
+    const title = String(req.body?.title ?? '').trim() || 'Untitled';
     const [big] = await db.query('SELECT max(version) AS v FROM big_versions WHERE brand_id=$1', [BRAND]);
     const [row] = await db.query(
       `INSERT INTO reviews (brand_id, big_version, title, content_type, creator_id) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [BRAND, big.v, title, req.body?.content_type || 'blog', req.user.sub]);
+      [BRAND, big.v, title, req.body?.content_type ?? 'blog', req.user.sub]);
     await audit(db, { brandId: BRAND, reviewId: row.id, actor: req.user, action: 'review.created', detail: { title } });
     res.status(201).json(row);
   }));
@@ -174,10 +176,10 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
     const b = req.body ?? {};
     const ok = { creator: ['accepted', 'disputed'], manager: ['accepted', 'disputed', 'overridden', 'manual'],
       approver: ['overridden', 'manual'], admin: ['accepted', 'disputed', 'overridden', 'manual'] };
+    const invalid = validateDecision(b); if (invalid) return res.status(400).json(invalid);
     if (!ok[req.user.role].includes(b.decision)) return res.status(403).json({ error: 'forbidden' });
     if (['disputed', 'overridden'].includes(b.decision) && !String(b.reason ?? '').trim())
       return res.status(400).json({ error: 'reason_required' });
-    if (!b.flag_key || !Number.isInteger(b.revision)) return res.status(400).json({ error: 'flag_key_and_revision_required' });
     const [d] = await db.query(
       `INSERT INTO flag_decisions (review_id, revision_number, brand_id, flag_key, rule_id, agent, quoted_text, decision, reason, actor_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
@@ -189,8 +191,8 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
 
   r.post('/:id/comments', wrap(async (req, res) => {
     const rev = await load(req, res); if (!rev) return;
-    const body = String(req.body?.body ?? '').trim().slice(0, 2000);
-    if (!body) return res.status(400).json({ error: 'body_required' });
+    const invalid = validateComment(req.body); if (invalid) return res.status(400).json(invalid);
+    const body = req.body.body.trim();
     const [c] = await db.query('INSERT INTO comments (review_id, brand_id, author_id, body) VALUES ($1,$2,$3,$4) RETURNING *', [rev.id, BRAND, req.user.sub, body]);
     await audit(db, { brandId: BRAND, reviewId: rev.id, actor: req.user, action: 'comment.added', detail: { comment_id: c.id } });
     res.status(201).json(c);
@@ -199,6 +201,7 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
   r.post('/:id/transition', wrap(async (req, res) => {
     const rev = await load(req, res); if (!rev) return;
     const { action, reason } = req.body ?? {};
+    const invalidReason = validateReason(reason); if (invalidReason) return res.status(400).json(invalidReason);
     const d = decide(action, rev.status, req.user.role);
     if (!d.ok) return res.status(d.status).json(d);
     if (d.rule.reason && !String(reason ?? '').trim()) return res.status(400).json({ error: 'reason_required' });
