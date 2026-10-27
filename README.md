@@ -24,7 +24,7 @@ Works on desktop and phone widths. **Live:** https://verity-two-delta.vercel.app
 | Creators and managers (Round 3) | **New image review**: upload a banner or graphic; VisualGuard marks problems with numbered boxes (colours outside the palette, a retired logo, a stretched, recoloured or crowded logo). Same decisions, approval and audit as text |
 | Managers (Round 3) | **Brand assets** on the Brand page (logos, retired logos, palette); **Drift** page (which teams are slowly moving away from the guidelines, with a weekly digest and an alert); **client report** link from the dashboard (read-only, expiring, revocable) |
 
-Seeded so nothing opens empty: two brands (Lumina Coffee Co. and Northwind Tea Co.) with their own guidelines, logos and palettes, about 140 historical reviews from five teams (ten weeks, with a planted drift in one), notifications, and a prompt-injection test sample.
+Seeded so nothing opens empty: two brands (Lumina Coffee Co. and Northwind Tea Co.) with their own guidelines, logos and palettes, about 140 historical reviews from four teams (ten weeks, with a planted drift in one), notifications, and a prompt-injection test sample.
 
 ## Architecture
 ```mermaid
