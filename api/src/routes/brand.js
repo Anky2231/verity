@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from '../auth.js';
 import { brandContext } from '../brand.js';
 import { audit } from '../audit.js';
 import { validateBig, bigCounts } from '../big.js';
+import fs from 'node:fs';
 
 const MAX_FILE_B64 = 7_000_000; // ~5 MB file
 
@@ -30,7 +31,14 @@ export function brandRouter({ db, aiFetch }) {
 
   // Guideline file (or the built-in sample) -> structured draft for the preview screen. Nothing is saved yet.
   r.post('/extract', editor, wrap(async (req, res) => {
-    const { filename, content_base64, use_sample } = req.body ?? {};
+    let { filename, content_base64, use_sample } = req.body ?? {};
+    // "Use sample" means the sample of the active brand. Lumina's lives in the AI service; the others ship a guideline file.
+    if (use_sample && req.brand !== 'lumina') {
+      try {
+        content_base64 = fs.readFileSync(new URL(`../../seed/${req.brand}_guideline.md`, import.meta.url)).toString('base64');
+        filename = `${req.brand}-guidelines.md`; use_sample = false;
+      } catch { return res.status(400).json({ error: 'no_sample_for_brand', detail: 'this brand has no sample guideline; upload a file instead' }); }
+    }
     if (!use_sample && (typeof content_base64 !== 'string' || !content_base64)) return res.status(400).json({ error: 'file_required' });
     if (typeof content_base64 === 'string' && content_base64.length > MAX_FILE_B64) return res.status(413).json({ error: 'file_too_large' });
     try {
