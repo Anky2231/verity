@@ -4,6 +4,7 @@ import { api, explain } from '../../lib/api';
 import { useSession } from '../../lib/session';
 import { markProgress } from '../../lib/progress';
 import { usePageTitle } from '../../lib/title';
+import BrandAssets from '../../components/BrandAssets';
 
 const SEVS = ['low', 'medium', 'high', 'critical'];
 const csv = (a) => (a ?? []).join(', ');
@@ -94,6 +95,8 @@ export default function Brand() {
           </p>
         </div>)}
       {!allowed && <p className="muted">Only managers can change guidelines. You can see the current version above.</p>}
+
+      {!draft && ['manager', 'approver', 'admin'].includes(role) && <BrandAssets token={token} canEdit={allowed} />}
 
       {draft && (
         <section aria-label="Extraction preview">
