@@ -24,10 +24,10 @@ def rgb_to_hex(rgb) -> str:
 
 def rgb_to_lab(rgb) -> np.ndarray:
     """rgb: (..., 3) array of 0..255 values -> (..., 3) Lab."""
-    c = np.asarray(rgb, dtype=np.float64) / 255.0
-    lin = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
-    xyz = lin @ _M.T / _WHITE
-    f = np.where(xyz > 216 / 24389, np.cbrt(xyz), (24389 / 27 * xyz + 16) / 116)
+    c = np.asarray(rgb, dtype=np.float32) / np.float32(255.0)   # float32: half the memory of float64, plenty for colour work
+    lin = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4).astype(np.float32)
+    xyz = lin @ _M.T.astype(np.float32) / _WHITE.astype(np.float32)
+    f = np.where(xyz > 216 / 24389, np.cbrt(xyz), (24389 / 27 * xyz + 16) / 116).astype(np.float32)
     return np.stack([116 * f[..., 1] - 16, 500 * (f[..., 0] - f[..., 1]), 200 * (f[..., 1] - f[..., 2])], axis=-1)
 
 

@@ -14,7 +14,7 @@ from . import logos, palette
 from .colour import hex_to_rgb
 
 MAX_PIXELS = 25_000_000      # refuse images larger than this
-WORK_LONG_SIDE = 1600        # larger images are shrunk to this before analysis; regions are reported in the shrunk image
+WORK_LONG_SIDE = 1200        # larger images are shrunk to this before analysis; regions are reported in the shrunk image
 RETIRED_OVERLAP = 0.5        # a retired-logo match this much inside an approved-logo match is the same object, not a second logo
 
 CLAUSES = {
