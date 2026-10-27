@@ -147,3 +147,10 @@ test('a user in one brand only is not sent any other brand', async () => {
   const { siblingBrands } = await import('../src/brand.js');
   assert.deepEqual(await siblingBrands(db, 'u_solo', 'northwind'), []);
 });
+
+test('sample posts follow the active brand', async () => {
+  const nw = await call('creator', 'northwind', 'GET', '/sample');
+  assert.equal(nw.status, 200);
+  assert.match(nw.body.samples[0].content, /tea bags/);
+  assert.ok(nw.body.samples.every((s) => !/Lumina/.test(s.content)), 'Northwind samples do not mention Lumina');
+});
