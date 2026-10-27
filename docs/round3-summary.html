@@ -1,0 +1,83 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Verity: Round 3 project summary</title>
+<style>
+@page{size:A4;margin:16mm 15mm}
+body{font:10.5pt/1.45 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;color:#16181d}
+h1{font-size:24pt;margin:0 0 2pt}h2{font-size:14pt;margin:16pt 0 5pt;border-bottom:1.5px solid #1d4ed8;padding-bottom:2pt;color:#1d4ed8}
+h3{font-size:11pt;margin:10pt 0 3pt}p{margin:4pt 0}ul{margin:3pt 0 3pt 16pt;padding:0}li{margin:1.5pt 0}
+table{border-collapse:collapse;width:100%;margin:6pt 0;font-size:9.5pt}th,td{border:1px solid #c8ccd4;padding:3.5pt 6pt;text-align:left;vertical-align:top}th{background:#eef2ff}
+.sub{color:#555;margin:0 0 8pt}.box{border:1px solid #1d4ed8;border-radius:6pt;padding:7pt 10pt;background:#f5f8ff;margin:8pt 0}
+.flow{display:flex;gap:6pt;align-items:stretch;margin:8pt 0}.flow div{flex:1;border:1px solid #1d4ed8;border-radius:5pt;padding:5pt;text-align:center;font-size:9pt}
+.flow span{align-self:center;color:#1d4ed8;font-weight:bold}code{font-size:9pt;background:#f1f2f4;padding:0 2pt}
+.pb{page-break-before:always}
+</style></head><body>
+<h1>Verity</h1>
+<p class="sub">Intelligent brand governance. Every word. Every pixel. On brand. · Team Merge Conflicts · Inkloom AI Hackathon, Brand Governance track · Round 3 final project document</p>
+
+<div class="box">
+<b>Working product (no signup):</b> https://verity-two-delta.vercel.app → click <b>Start judge walkthrough</b>. Roles: Maya (Creator), Rajan (Manager), Anita (Approver), one click each on the landing page. Maya also belongs to a second brand, Northwind, where she is a manager.<br>
+<b>Source code (public):</b> https://github.com/Swas00/verity · <b>API reference:</b> <code>docs/openapi.yaml</code> · <b>Round 3 results page in the app:</b> <code>/roadmap</code><br>
+<b>Note:</b> the site runs on free hosting. After a quiet period the first visit can take 30 to 60 seconds; the landing page says "Waking up the server" and signs you in by itself.
+</div>
+
+<h2>1. What Verity does, and what Round 3 added</h2>
+<p>Verity checks marketing content against a brand's guidelines and explains every flag with the clause it breaks, a confidence score and a suggested fix. People make the final call: Creator, Manager and Approver roles with a tamper-evident audit trail. Nothing is published automatically. Round 2 delivered the text workflow (guideline builder, TermGuard, ClaimGuard, ToneGuard in basic mode, MetaAgent scoring, approval workflow, audit trail, dashboard). Round 3 adds the three improvements promised, and closes several Round 2 gaps.</p>
+
+<h2>2. The three promised improvements: built, tested, measured</h2>
+<table><tr><th style="width:17%">Improvement</th><th>What a user can do now</th><th style="width:34%">Target and measured result</th></tr>
+<tr><td><b>VisualGuard</b><br>images and logos</td><td>Upload a banner or graphic. Every problem is marked with a numbered box and its guideline clause: colours outside the palette, a retired logo, a stretched, squashed, recoloured or crowded approved logo. Managers keep each brand's logos, retired logos and palette on the Brand page. Decisions, scoring, approval and audit work as for text.</td><td><b>Target:</b> 85% recall, 10% false flags, 30 images.<br><b>Held-out:</b> 22 of 22 found, 0 of 8 compliant flagged. <b>Stress set</b> (harder, never tuned): 9 of 15; rotated and cropped logos missed, photo backgrounds flagged as off-palette. Images are synthetic.</td></tr>
+<tr><td><b>Multi-brand workspaces</b><br>agency mode</td><td>One person, several brands, a different role in each (Maya: creator at Lumina, manager at Northwind). A header switcher changes guidelines, reviews, audit, dashboard, drift and notifications. Lumina wording in a Northwind post is flagged "other brand". Managers send clients a read-only report link that expires and can be revoked.</td><td><b>Target:</b> no cross-brand access; 80% of planted cross-brand wording flagged.<br><b>Result:</b> every review route called from the other brand returns 404 (the test fails if the filter is removed); wording: 18 of 21 (86%), 0 of 18 clean texts flagged. Voice-only wording is not caught (0 of 3).</td></tr>
+<tr><td><b>Brand Drift Intelligence</b></td><td>The Drift page shows which teams are moving away from the guidelines: recent violation rate against the team's own baseline, the clauses most likely to be broken next, trend charts with data tables, a weekly digest and a manager alert.</td><td><b>Target:</b> alert within 3 weeks of the drift starting; none on a stable team.<br><b>500 held-out simulated series:</b> stable teams alerted 4.6%; 2.2x step caught within 3 weeks in 92% (median 1 week); ramp 71%; mild 1.6x step only 45%. Seeded history: Social found, three teams stable.</td></tr></table>
+<p><b>Round 2 gaps closed:</b> ClaimGuard no longer flags "Limited time only" or "best-in-class" as claims; uploads up to the documented 5 MB now work (the API limited every request to 2 MB); the queue loads 25 reviews at a time with title search; results can be shared with a client.</p>
+
+<h2>3. Finished and working on the live link</h2>
+<table><tr><th style="width:26%">Area</th><th>What works</th></tr>
+<tr><td>Guidelines</td><td>Upload PDF, DOCX, TXT or MD (or a sample); editable preview with notes; publish as an immutable version. Per-brand logos, retired logos and palette.</td></tr>
+<tr><td>Text review</td><td>Editor with highlights on every flagged span; TermGuard (variants, allowed contexts), ClaimGuard (claims register with document and page, number conflicts), ToneGuard in labelled basic mode; MetaAgent score; results stream in; one failing agent never blocks the others; accept, edit, dispute (reason required); revision diff.</td></tr>
+<tr><td>Image review</td><td>Upload; numbered boxes on the image; the same problems as a text list; dispute or override with a reason; upload new versions; submit and approve.</td></tr>
+<tr><td>Workflow and audit</td><td>Submit, approve, reject, escalate, final approval, send back, publish; server-enforced roles; no self-approval; queue; comments; notifications; append-only hash-chained audit trail per brand with verification and CSV or JSON export.</td></tr>
+<tr><td>Brands</td><td>Switcher; per-brand roles; other-brand wording flagged; client report links (hash-stored token, expiry, revocation, no content or names).</td></tr>
+<tr><td>Insight</td><td>Dashboard (scores, time to approve, violations by agent, content type and creator, clauses reviewers keep overriding, learning loop); Drift page and weekly digest.</td></tr>
+<tr><td>Engineering</td><td>OpenAPI reference for every route (checked against the code by a test); pagination and search; request ids, logging and security headers; validation; optional Redis queue; server-waking message; accessibility checks and keyboard-only runs in light and dark mode.</td></tr></table>
+
+<h2>4. Architecture and technology</h2>
+<table><tr><th style="width:18%">Service</th><th>Technology and role</th></tr>
+<tr><td>Web (Vercel)</td><td>Next.js 14, React 18, TipTap. Interface only; every permission is re-checked by the API.</td></tr>
+<tr><td>API (Render, free)</td><td>Node.js and Express. JWT demo logins; a brand-context middleware that sets the active brand and the user's role in it; workflow state machine; SSE; cache and rate limiter; audit log; drift analysis; client reports.</td></tr>
+<tr><td>AI service</td><td>Python FastAPI, Pydantic, Pillow, NumPy, OpenCV (headless). Text agents, MetaAgent, VisualGuard. Stateless: guidelines, logos and palette are sent with each request. Same container as the API.</td></tr>
+<tr><td>Database (Neon, free)</td><td>PostgreSQL with JSONB; memberships, assets and images (bytea), share links, drift digests; <code>brand_id</code> on every table.</td></tr></table>
+<h3>Hard parts</h3>
+<ul>
+<li><b>Logo checks without a model.</b> Template matching on edge maps: a coarse search over 22 sizes and 11 stretches, then a precise match; a stretched fit must score clearly higher than the undistorted logo to count as distortion; a second pass on colour edges finds a recoloured logo; recolouring is judged per logo colour.</li>
+<li><b>Provable brand isolation.</b> One middleware decides the brand and role; a test calls every review route from the other brand; breaking the filter on purpose makes that test fail.</li>
+<li><b>A drift detector that stays quiet.</b> A Poisson standard error widened by a measured dispersion factor, a minimum rise of 1.3 times, and a threshold chosen on one simulated set and measured on another.</li>
+<li><b>Honest degradation.</b> Per-agent isolation, labelled fallbacks, a circuit breaker around the optional queue, memory kept under the free host's limit (about 210 MB peak for a large image).</li></ul>
+
+<h2>5. Testing notes</h2>
+<ul>
+<li><b>Automated:</b> 102 API tests run by default (4 more need Redis or the real AI service, and run in CI), 127 AI tests, 7 web unit tests, lint, build, and browser suites in real Chrome: full journey, accessibility audit (0 serious or critical violations), keyboard-only runs, 320 px reflow, sleeping server, multi-brand, drift, image reviews against the real AI service, queue, Round 3 keyboard use. All run in GitHub Actions on every push.</li>
+<li><b>Evaluation sets:</b> text agents (30 + 30 texts), contamination (39 texts), images (30 dev + 30 held-out + 20 stress), drift (simulated teams). Thresholds were set on dev data. Held-out and stress sets were not used to tune, except that the two ClaimGuard patterns fixed in Round 3 were already-known held-out errors.</li>
+<li><b>Found by the new tests while building:</b> stale rows after switching brand; weeks starting on Thursday; images returned as JSON; a text charset added to image types; the 2 MB request limit; plain banners matched as a retired logo.</li></ul>
+
+<h2>6. What changed from the plan, and why</h2>
+<ul>
+<li>VisualGuard uses classical image processing, not CLIP: CLIP needs more memory than the free 512 MB host and a model download. It costs nothing and takes 1 to 2 seconds per image.</li>
+<li>Drift uses violation rates, not tone embeddings (no embedding model on the free host; the embedding experiment in Round 2 did not help).</li>
+<li>No S3: logos and reviewed images live in PostgreSQL. The weekly digest is created on first view of a new week because the free host has no scheduler. Teams are a field on a brand membership.</li></ul>
+
+<h2>7. What does NOT work yet</h2>
+<ul>
+<li>ToneGuard on the demo is rule-based basic mode, so subtle voice problems are not caught.</li>
+<li>VisualGuard misses rotated and cropped logos and treats photographs as off-palette; it knows the brand's logo files, not "off-brand" in general. Test images are synthetic, so real designs will score lower.</li>
+<li>Other-brand detection does not catch wording with no listed term, claim or name.</li>
+<li>Drift needs about 7 weeks of history per team; mild drifts are often missed; the history is simulated and seeded.</li>
+<li>No usability test with outside people and no screen-reader test. The demo data is shared by every visitor. The free host sleeps when idle. Email is built but off.</li></ul>
+
+<h2>8. Team and disclosures</h2>
+<table><tr><th>Name</th><th>Round 1 role</th><th>Contribution (as the repository shows it)</th></tr>
+<tr><td>Swastik Sahu</td><td>Full-Stack Lead and AI/ML Engineer</td><td>Project lead and integration; Round 3 design and build of all three improvements, tests, evaluation, documentation and CI.</td></tr>
+<tr><td>Akriti Tigga</td><td>Backend Engineer</td><td></td></tr>
+<tr><td>Gayathri VS</td><td>Frontend Engineer and UI/UX Designer</td><td>Round 2: accessible reason dialog with end-to-end test updates.</td></tr>
+<tr><td>Sakshi Kumari</td><td>AI / ML Engineer</td><td></td></tr>
+<tr><td>Shivam Agarwal</td><td>Backend Engineer and DevOps</td><td>Round 2: optional BullMQ and Redis queue, queue tests and benchmark, CI jobs with and without Redis.</td></tr></table>
+<p><b>AI assistance:</b> the team used Claude (Anthropic) while building, including Claude Code for writing and testing parts of the code, tests and documentation; the team directed and reviewed the work. <b>Licence:</b> MIT. <b>Demo data:</b> "Lumina Coffee Co.", "Northwind Tea Co." and every review, user, team and image are fictional.</p>
+</body></html>
