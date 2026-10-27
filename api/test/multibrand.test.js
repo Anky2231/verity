@@ -154,3 +154,28 @@ test('sample posts follow the active brand', async () => {
   assert.match(nw.body.samples[0].content, /tea bags/);
   assert.ok(nw.body.samples.every((s) => !/Lumina/.test(s.content)), 'Northwind samples do not mention Lumina');
 });
+
+test('"use sample" at Northwind extracts Northwind\'s own guideline, not Lumina\'s', async () => {
+  const seen = [];
+  const real = globalThis.fetch;
+  process.env.AI_SERVICE_URL = 'http://ai.test';
+  globalThis.fetch = (url, init) => {
+    if (!String(url).startsWith('http://ai.test')) return real(url, init);
+    seen.push(JSON.parse(init.body));
+    return Promise.resolve(new Response(JSON.stringify({ big: { rules: [], glossary: [], claims: [] }, notes: [], chars: 1 }), { status: 200 }));
+  };
+  try {
+    assert.equal((await call('creator', 'northwind', 'POST', '/brand/extract', { use_sample: true })).status, 200);   // Maya manages Northwind
+    assert.equal((await call('manager', 'lumina', 'POST', '/brand/extract', { use_sample: true })).status, 200);
+  } finally { globalThis.fetch = real; }
+  assert.equal(seen[0].use_sample, false);
+  assert.match(Buffer.from(seen[0].content_base64, 'base64').toString(), /^Northwind Tea Co\. Brand Guidelines/);
+  assert.equal(seen[0].brand_id, 'northwind');
+  assert.equal(seen[1].use_sample, true, 'Lumina still uses the AI service sample');
+});
+
+test('the downloadable and the built-in Northwind guideline files are identical', () => {
+  const a = fs.readFileSync(new URL('../seed/northwind_guideline.md', import.meta.url), 'utf8');
+  const b = fs.readFileSync(new URL('../../web/public/sample/northwind-brand-guidelines.md', import.meta.url), 'utf8');
+  assert.equal(a, b);
+});
