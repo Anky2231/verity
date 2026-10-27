@@ -37,7 +37,7 @@ await p.getByRole('button', { name: /Brand:.*Northwind/ }).waitFor();
 check('at Northwind Maya is a manager', (await header.locator('.badge.green').innerText()) === 'manager' && (await header.getByRole('link', { name: 'Dashboard' }).count()) === 1);
 await p.waitForLoadState('networkidle');
 const northwindRows = await p.locator('table tbody tr').count();
-check('Lumina reviews are not visible at Northwind', northwindRows < 5 && (await p.getByText('Lumina spring campaign').count()) === 0, `rows=${northwindRows}`);
+check('Lumina reviews are not visible at Northwind', northwindRows < luminaRows / 2 && (await p.getByText('Lumina spring campaign').count()) === 0, `rows=${northwindRows}`);
 
 // ---- A Northwind review that contains Lumina's wording ----
 await p.goto(WEB + '/review');
