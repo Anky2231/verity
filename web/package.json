@@ -11,7 +11,8 @@
     "test": "node --test test/spanMap.test.mjs test/wake.test.mjs",
     "a11y": "node e2e/a11y.mjs",
     "keyboard": "node e2e/keyboard.mjs",
-    "waking": "node e2e/waking.mjs"
+    "waking": "node e2e/waking.mjs",
+    "multibrand": "node e2e/multibrand.mjs"
   },
   "dependencies": {
     "@tiptap/core": "^2.27.3",
