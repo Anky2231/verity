@@ -1,12 +1,12 @@
 'use client';
 import { Fragment, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { api, API } from '../../lib/api';
+import { api, API, brandHeader } from '../../lib/api';
+import { useSession } from '../../lib/session';
 import { usePageTitle } from '../../lib/title';
 
 const short = (h) => (h ? `${h.slice(0, 8)}…${h.slice(-4)}` : '');
 const when = (ts) => new Date(ts).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-const roleOf = (t) => { try { return JSON.parse(atob(t.split('.')[1])).role; } catch { return null; } };
 
 function describe(r) {
   const d = r.detail ?? {};
@@ -22,7 +22,7 @@ function describe(r) {
 function AuditInner() {
   usePageTitle('Audit trail');
   const initial = useSearchParams().get('review_id') ?? '';
-  const [token, setToken] = useState(undefined);
+  const { token, role } = useSession();
   const [rows, setRows] = useState([]);
   const [reviewId, setReviewId] = useState(initial);
   const [action, setAction] = useState('');
@@ -31,8 +31,7 @@ function AuditInner() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { try { setToken(localStorage.getItem('verity_token')); } catch { setToken(null); } }, []);
-  const allowed = token && ['manager', 'approver', 'admin'].includes(roleOf(token));
+  const allowed = token && ['manager', 'approver', 'admin'].includes(role);
 
   const load = useCallback(async () => {
     try { setRows((await api(`/audit${reviewId ? `?review_id=${encodeURIComponent(reviewId)}` : ''}`, { token })).reverse()); setError(''); }
@@ -45,7 +44,7 @@ function AuditInner() {
     try { setChain(await api('/audit/verify', { token })); } catch { setError('Verification failed to run.'); } finally { setBusy(false); }
   }
   async function download(format) {
-    const res = await fetch(`${API}/audit?format=${format}${reviewId ? `&review_id=${encodeURIComponent(reviewId)}` : ''}`, { headers: { authorization: `Bearer ${token}` } });
+    const res = await fetch(`${API}/audit?format=${format}${reviewId ? `&review_id=${encodeURIComponent(reviewId)}` : ''}`, { headers: { authorization: `Bearer ${token}`, ...brandHeader() } });
     const url = URL.createObjectURL(await res.blob());
     Object.assign(document.createElement('a'), { href: url, download: `verity-audit.${format}` }).click(); URL.revokeObjectURL(url);
   }
