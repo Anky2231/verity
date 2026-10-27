@@ -5,6 +5,7 @@ import { reviewsRouter } from './routes/reviews.js';
 import { governanceRouter } from './routes/governance.js';
 import { brandRouter } from './routes/brand.js';
 import { notificationsRouter } from './routes/notifications.js';
+import { shareRouter } from './routes/share.js';
 import { signToken, requireAuth, requireRole } from './auth.js';
 import { brandContext } from './brand.js';
 import { createReviewQueue } from './queue.js';
@@ -84,6 +85,7 @@ export function createApp({ db, log } = {}) {
     app.use('/brand', brandRouter({ db, aiFetch }));
     app.use('/notifications', notificationsRouter({ db }));
     app.use('/', governanceRouter({ db }));
+    app.use('/', shareRouter({ db }));
   }
 
   return app;
