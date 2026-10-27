@@ -47,7 +47,7 @@ for (const scheme of ['light', 'dark']) {
   // manager pages
   c = await ctx(); p = await c.newPage(); await login(p, 'Rajan · Manager');
   await audit(p, '/queue (manager)', scheme);
-  for (const path of ['/brand', '/dashboard', '/audit']) { await p.goto(WEB + path); await p.waitForTimeout(2500); await audit(p, path, scheme); }
+  for (const path of ['/brand', '/dashboard', '/drift', '/audit']) { await p.goto(WEB + path); await p.waitForTimeout(2500); await audit(p, path, scheme); }
   await p.goto(WEB + '/brand'); await p.getByText('Use sample guideline').click(); await p.getByText('Preview what was extracted').waitFor(); await audit(p, '/brand (extraction preview)', scheme);
   await c.close();
 }
