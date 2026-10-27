@@ -46,7 +46,7 @@ const NAMED = [
 const DEVIATIONS = [
   ['MongoDB', 'PostgreSQL JSONB', 'One database fewer to deploy; findings and revisions are JSON anyway.'],
   ['Pinecone', 'Not used; ClaimGuard uses lexical retrieval (BM25 + weighted coverage)', 'No external account. We tested character n-gram vectors and they did worse than the current check on our data (ai/scripts/vector_experiment.py), and the claims register is small enough to search in memory, so no vector store is needed. It becomes worthwhile with a neural embedding model or a register of thousands of claims.'],
-  ['AWS S3', 'Deferred to Round 3 with VisualGuard', 'Images only matter once VisualGuard exists.'],
+  ['AWS S3', 'Not used: logos and reviewed images are stored in PostgreSQL', 'VisualGuard needed images in Round 3; at this size the database is enough, and it keeps images under the same brand scoping, backups and audit as everything else.'],
   ['Clerk', 'Own JWT auth with seeded demo users', 'Judges can try every role in one click, with no signup. The role model is unchanged.'],
   ['Liveblocks', 'Dropped', 'Not part of the core review workflow.'],
   ['BullMQ + Redis + Socket.IO', 'Optional BullMQ + Redis jobs when REDIS_URL is configured; SSE remains the browser stream. Without REDIS_URL, the direct asyncio pipeline is used.', 'The live demo keeps working without Redis, while deployments that configure Redis can distribute independent agent jobs. Socket.IO remains replaced by server-sent events.'],
