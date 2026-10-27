@@ -29,6 +29,25 @@ sequenceDiagram
   G-->>U: SSE "done" with revision number
 ```
 
+## Image review (VisualGuard)
+```mermaid
+sequenceDiagram
+  participant U as Browser
+  participant G as API
+  participant D as PostgreSQL
+  participant A as AI service
+  U->>G: POST /reviews/:id/image (image as base64, X-Brand-Id)
+  G->>G: membership and role, state check, size and type read from the bytes, rate limit
+  G->>D: the brand's palette, logos and retired logos
+  G->>G: cache lookup (image hash + assets + calibration)
+  G->>A: POST /visual/review (image, palette, logos, retired logos)
+  A->>A: palette check (Lab k-means), logo search (coarse then fine edge matching), distortion, recolour, clear space
+  A-->>G: findings with regions, score (same MetaAgent scoring)
+  G->>D: revision (result), review_images (the bytes), audit entry
+  G-->>U: revision, score, highlights with regions
+  U->>G: GET /reviews/:id/image/:n (blob URL, because img cannot send a token)
+```
+
 ## Services
 | Service | Responsibility |
 |---|---|
