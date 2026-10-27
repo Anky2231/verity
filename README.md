@@ -20,8 +20,11 @@ Works on desktop and phone widths. **Live:** https://verity-two-delta.vercel.app
 | Manager | Queue with score, open flags, change since last revision and age; override flags (reason required), add a flag the AI missed, comment, approve / reject (reason) / escalate |
 | Approver (Anita) | Final approve or send back escalations; approved content exports as text, Markdown or JSON; "Mark as published" is a human action |
 | Managers and approvers | Dashboard (score trend, violations by agent / content type / creator, clauses reviewers keep overriding) and the audit trail (verify the hash chain, export CSV/JSON) |
+| Anyone with several brands (Round 3) | Switch brand in the header: guidelines, reviews, audit trail, dashboard and notifications change with it, and so can the person's role (Maya is a creator at Lumina and a manager at Northwind). Wording from the *other* brand is flagged "other brand" |
+| Creators and managers (Round 3) | **New image review**: upload a banner or graphic; VisualGuard marks problems with numbered boxes (colours outside the palette, a retired logo, a stretched, recoloured or crowded logo). Same decisions, approval and audit as text |
+| Managers (Round 3) | **Brand assets** on the Brand page (logos, retired logos, palette); **Drift** page (which teams are slowly moving away from the guidelines, with a weekly digest and an alert); **client report** link from the dashboard (read-only, expiring, revocable) |
 
-Seeded so nothing opens empty: one brand with guideline v1, 40 historical reviews in every state, notifications, and a prompt-injection test sample.
+Seeded so nothing opens empty: two brands (Lumina Coffee Co. and Northwind Tea Co.) with their own guidelines, logos and palettes, about 140 historical reviews from five teams (ten weeks, with a planted drift in one), notifications, and a prompt-injection test sample.
 
 ## Architecture
 ```mermaid
