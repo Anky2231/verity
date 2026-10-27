@@ -6,7 +6,7 @@
   "type": "object",
   "required": ["agent", "rule_id", "clause_citation", "quoted_text", "confidence", "severity", "explanation"],
   "properties": {
-    "agent": { "enum": ["tone", "term", "claim", "visual", "access", "manual"] },
+    "agent": { "enum": ["tone", "term", "claim", "brand", "visual", "access", "manual"] },
     "rule_id": { "type": "string", "description": "BIG rule/term/claim id this finding cites" },
     "clause_citation": { "type": "string", "description": "Human-readable guideline reference, e.g. 'Voice §2.1'" },
     "span": {

@@ -2,7 +2,7 @@
 from typing import Literal, Optional
 from pydantic import BaseModel, Field, model_validator
 
-Agent = Literal["tone", "term", "claim", "visual", "access", "manual"]
+Agent = Literal["tone", "term", "claim", "brand", "visual", "access", "manual"]
 Severity = Literal["low", "medium", "high", "critical"]
 
 
