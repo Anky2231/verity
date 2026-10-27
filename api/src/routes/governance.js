@@ -43,9 +43,6 @@ export function governanceRouter({ db }) {
     res.json(paged ? { items: rows, next_before_id: next } : rows);
   });
 
-  // Round 3 (VisualGuard) groundwork: the route exists and is role-guarded, the feature does not.
-  r.post('/brand-assets', guard, (_req, res) => res.status(501).json({ error: 'coming_in_round_3', feature: 'VisualGuard' }));
-
   r.get('/audit/verify', guard, async (req, res) => res.json(await verifyChain(db, req.brand)));
 
   // Dashboard numbers + ambiguity detector (rules humans keep overriding are probably unclear).
