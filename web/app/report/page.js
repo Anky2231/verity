@@ -6,7 +6,7 @@ import { STATUS_LABEL } from '../../lib/labels';
 import { usePageTitle } from '../../lib/title';
 
 const when = (ts) => new Date(ts).toLocaleDateString(undefined, { dateStyle: 'medium' });
-const AGENT = { tone: 'Tone', term: 'Terminology', claim: 'Claims', brand: 'Other brand wording' };
+const AGENT = { tone: 'Tone', term: 'Terminology', claim: 'Claims', brand: 'Other brand wording', visual: 'Images' };
 
 function Stat({ label, value }) {
   return <div className="card" style={{ marginBottom: 0 }}><div className="muted">{label}</div><div style={{ fontSize: 28, fontWeight: 700 }}>{value ?? '—'}</div></div>;
