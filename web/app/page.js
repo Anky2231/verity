@@ -98,7 +98,7 @@ export default function Home() {
           <span>{error}</span><button onClick={() => window.location.reload()}>Try again</button>
         </div>)}
 
-      <p style={{ marginTop: 28 }}><a href="/about">What changed since Round 1</a> · <a href="/roadmap">Round 3 roadmap</a></p>
+      <p style={{ marginTop: 28 }}><a href="/about">What changed since Round 1</a> · <a href="/roadmap">Round 3 results</a></p>
       <p className="muted">
         API {health ? <span className={`badge ${health.api === 'up' ? 'green' : 'red'}`}>{health.api}</span> : '…'}
         {' '}AI service {health ? <span className={`badge ${health.ai === 'up' ? 'green' : 'red'}`}>{health.ai}</span> : '…'}
