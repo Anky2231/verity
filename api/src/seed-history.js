@@ -7,32 +7,32 @@ const U = {
   maya: { sub: 'u_maya', role: 'creator' }, rajan: { sub: 'u_rajan', role: 'manager' }, anita: { sub: 'u_anita', role: 'approver' },
 };
 
-function prng(seed) {
+export function prng(seed) {
   let a = seed;
   return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-const CLEAN = [
+export const CLEAN = [
   'Our roasters pick every batch by hand.', 'Try it black first, then tell us what you taste.',
   'Our beans are sourced directly from 40 partner farms.', 'All packaging is 100% compostable.',
   'Roasted in small batches within 48 hours of shipping.', 'Come say hello at the Saturday market.',
   'The new seasonal blend is on the shelves today.', 'Brew it slowly and enjoy the first sip.',
 ];
-const TERM = [
+export const TERM = [
   { t: 'Grab your morning java at Lumina.', q: 'java', id: 't_1', fix: 'coffee beans', cite: 'Terminology §2.1' },
   { t: 'Hand-picked joe, delivered fresh.', q: 'joe', id: 't_1', fix: 'coffee beans', cite: 'Terminology §2.1' },
   { t: 'Our consumers tell us the new roast is smooth.', q: 'consumers', id: 't_2', fix: 'customers', cite: 'Terminology §2.3' },
   { t: 'Great news for users who like it dark.', q: 'users', id: 't_2', fix: 'customers', cite: 'Terminology §2.3' },
   { t: 'Try our cheap beans this week.', q: 'cheap beans', id: 't_3', fix: 'ethically sourced', cite: 'Terminology §2.5' },
 ];
-const CLAIM = [
+export const CLAIM = [
   { t: 'We are the best coffee in the world.', q: 'We are the best coffee in the world', conf: 0.85 },
   { t: 'Every cup is 100% carbon neutral.', q: 'Every cup is 100% carbon neutral', conf: 0.85 },
   { t: 'Every order ships in 48 hours.', q: 'Every order ships in 48 hours', conf: 0.65, claim: 'c_3' },
   { t: 'Our coffee cures morning grumpiness, guaranteed.', q: 'Our coffee cures morning grumpiness, guaranteed', conf: 0.85 },
 ];
-const CLAIMS = { c_3: { text: 'Roasted in small batches within 48 hours of shipping', ref: 'c_3 · Operations Handbook p.11' } };
-const TONE = [
+export const CLAIMS = { c_3: { text: 'Roasted in small batches within 48 hours of shipping', ref: 'c_3 · Operations Handbook p.11' } };
+export const TONE = [
   { t: 'We leverage synergistic roasting solutions.', q: 'leverage synergistic roasting solutions', id: 'r_voice_1', sev: 'medium', cite: 'Voice §1.2', why: 'Corporate jargon is off-voice.' },
   { t: 'Our best-in-class paradigm elevates your morning.', q: 'best-in-class paradigm', id: 'r_voice_1', sev: 'medium', cite: 'Voice §1.2', why: 'Corporate jargon is off-voice.' },
   { t: 'BUY NOW!!!', q: '!!!', id: 'r_voice_2', sev: 'low', cite: 'Voice §1.4', why: 'At most one exclamation mark.' },
@@ -49,7 +49,7 @@ function finding(f, start, text) {
 }
 
 // sentences: [{t, flag?}] -> { text, result } in the same shape the AI service returns
-function buildRevision(sentences) {
+export function buildRevision(sentences) {
   let text = ''; const found = [];
   for (const s of sentences) {
     if (text) text += ' ';
