@@ -34,6 +34,8 @@ for (const scheme of ['light', 'dark']) {
   // creator pages
   c = await ctx(); p = await c.newPage(); await login(p, 'Maya · Creator');
   await audit(p, '/queue (creator)', scheme);
+  await p.goto(WEB + '/visual'); await p.waitForTimeout(1200); await audit(p, '/visual (new image review)', scheme);
+  await p.goto(WEB + '/queue'); await p.waitForSelector('tbody tr');
   await p.locator('select[aria-label="Status filter"]').selectOption('draft'); await p.waitForTimeout(1000);
   const hrefs = await p.locator('tbody tr a').evaluateAll((a) => a.map((x) => x.getAttribute('href')));
   for (const h of hrefs.slice(0, 15)) { await p.goto(WEB + h); await p.waitForTimeout(1800); if (await p.locator('.item').count()) break; }
