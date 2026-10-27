@@ -33,8 +33,8 @@ sequenceDiagram
 | Service | Responsibility |
 |---|---|
 | `web` | UI only. No business rules; every permission is re-checked by the API |
-| `api` | Auth, RBAC, workflow state machine (draft → submitted → approved / escalated / changes requested → published), notifications, caching, rate limiting, audit log, analytics, guideline versioning |
-| `ai` | Agents, MetaAgent, span verification, guideline extraction. Stateless: the BIG is sent with each request |
+| `api` | Auth, RBAC, workflow state machine (draft → submitted → approved / escalated / changes requested → published), notifications, caching, rate limiting, audit log, analytics, guideline versioning. Round 3: brand context and per-brand roles, brand assets, image reviews, drift analysis and the weekly digest, client report links |
+| `ai` | Agents, MetaAgent, span verification, guideline extraction, VisualGuard (image checks). Stateless: the BIG, and for images the brand's logos and palette, are sent with each request |
 | `Redis` | Optional BullMQ transport for independent review-agent jobs when `REDIS_URL` is configured; the default path runs the AI pipeline directly |
 | PostgreSQL | System of record. JSONB for findings and BIG versions. `brand_id` on every table |
 
