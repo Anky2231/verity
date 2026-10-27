@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import express from 'express';
 import cors from 'cors';
 import { DEMO_USERS } from './users.js';
@@ -73,7 +74,12 @@ export function createApp({ db, log } = {}) {
     return r;
   };
 
-  app.get('/sample', requireAuth, async (_req, res) => {
+  // Sample posts for the editor. Lumina's come from the AI service; other brands ship their own in seed/<brand>_samples.json.
+  app.get('/sample', requireAuth, ...(db ? [brandContext(db)] : []), async (req, res) => {
+    if (req.brand && req.brand !== 'lumina') {
+      try { return res.json(JSON.parse(fs.readFileSync(new URL(`../seed/${req.brand}_samples.json`, import.meta.url), 'utf8'))); }
+      catch { return res.json({ samples: [] }); }
+    }
     try { res.json(await aiFetch('/sample')); }
     catch { res.status(502).json({ error: 'ai_unavailable' }); }
   });
