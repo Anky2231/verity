@@ -103,15 +103,22 @@ Open http://localhost:3000. No Docker is needed locally; set `DATABASE_URL` to u
 
 ## Tests and evaluation
 ```bash
-cd api && npm test            # 48 default-path tests (workflow, RBAC, validation, HTTP headers, OpenAPI contract) + 3 Redis queue integration tests (skipped without REDIS_URL)
-cd ai  && .venv/bin/python -m pytest -q     # 62 tests: spans, merge and scoring, term variants, tone lexicons, retrieval, extraction (real PDF/DOCX), streaming, calibration, prompt injection
+cd api && npm test            # 102 tests run by default (workflow, RBAC, validation, HTTP headers, OpenAPI contract, multi-brand isolation, share links, drift, VisualGuard routes); 4 more are skipped unless Redis (3) or the real AI service (1) is available
+cd ai  && .venv/bin/python -m pytest -q     # 127 tests: spans, merge and scoring, term variants, tone lexicons, retrieval, extraction, streaming, calibration, prompt injection, other-brand detection, colour, palette and logo checks, and the VisualGuard acceptance test (about 2 minutes)
 cd web && npm test && npm run lint          # span-mapping and wake-up polling tests (7) + lint
-cd web && npm run e2e         # 37 browser checks of the full journey on a running stack (needs Chrome)
-cd web && npm run a11y        # axe-core audit: 11 pages and states in light and dark mode (0 violations)
-cd web && npm run keyboard    # keyboard-only journey, tab order and reflow at 320 px / 200% zoom (15 checks)
-cd web && npm run waking      # simulated sleeping server: the landing page explains the wait and signs in once it is up (12 checks)
-cd ai  && .venv/bin/python scripts/eval.py  # precision / recall on the dev and held-out sets (30 texts each)
+cd web && npm run e2e         # browser checks of the full journey on a running stack (needs Chrome)
+cd web && npm run a11y        # axe-core audit of every page and state in light and dark mode (0 serious or critical violations)
+cd web && npm run keyboard    # keyboard-only journey, tab order and reflow at 320 px / 200% zoom
+cd web && npm run waking      # simulated sleeping server: the landing page explains the wait and signs in once it is up
+cd web && npm run multibrand  # one person, two brands: roles, data, other-brand flag, client report link and its revocation
+cd web && npm run drift       # drift page on the seeded history: the planted drift, the digest, the alert, accessibility
+cd web && npm run visual      # image reviews against the real AI service, brand assets, per-brand checking (needs the AI service)
+cd web && npm run queue       # paged and searchable queue
+cd ai  && .venv/bin/python scripts/eval.py  # precision / recall on the dev and held-out text sets (30 texts each)
 cd ai  && .venv/bin/python scripts/calibrate.py  # stated confidence vs measured precision
+cd ai  && .venv/bin/python scripts/contamination_eval.py  # other-brand detection on 39 texts
+cd ai  && .venv/bin/python scripts/visual_eval.py both    # VisualGuard on the dev and held-out image sets (add "stress" for the harder set)
+cd api && npm run drift-eval  # drift detector on simulated teams: false alerts and detection delay
 ```
 CI runs all of these plus `npm audit` and `pip-audit` ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
