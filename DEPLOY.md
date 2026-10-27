@@ -35,6 +35,9 @@ Open the Vercel URL: both badges show `up`, **Start judge walkthrough** opens th
 - Free Postgres databases have size and compute limits and may suspend when idle (they wake on the next query).
 - The landing page shows a "Waking up the server" message while the API starts and signs visitors in automatically once it answers; `cd web && npm run waking` tests this with a simulated sleeping server.
 - Do an idle-for-an-hour test before submitting.
+- **Round 3 upgrade.** On the first start after deploying Round 3, the API applies migrations 005 to 008 by itself and seeds, once, the Northwind brand, brand memberships, each brand's logos and palette, and the ten-week team history that the Drift page uses. Nothing needs to be run by hand. Existing reviews and the audit chain are untouched.
+- **Memory.** The free web service has 512 MB. The API, the AI service and one image check at a time fit: analysing a large image peaked at about 210 MB for the Python process on a laptop (images are shrunk to 1200 px first). If the service is restarted for lack of memory, lower `WORK_LONG_SIDE` in `ai/app/visual/agent.py`.
+- The Docker image now installs Pillow, NumPy and OpenCV (headless) from `ai/requirements.txt`; the first build takes longer.
 
 ## Optional: Anthropic key
 Without `ANTHROPIC_API_KEY` and `MODEL_FAST`, ToneGuard runs in labelled basic mode and costs nothing. If you add a key, set a spend cap in the Anthropic console first.
