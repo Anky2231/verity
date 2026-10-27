@@ -8,6 +8,7 @@ so a banned slang word is not flagged when it means something else.
 """
 import re
 from ..models import Finding, Span
+from . import contamination
 
 EXACT_CONFIDENCE = 0.95
 VARIANT_CONFIDENCE = 0.85
@@ -88,4 +89,4 @@ def run(text: str, big: dict) -> list[Finding]:
                     confidence=EXACT_CONFIDENCE if exact else VARIANT_CONFIDENCE, severity="medium",
                     explanation=f"'{m.group(0)}' is not an approved term. {entry.get('reason', '')}".strip(),
                     suggestion=entry["approved"], replacement=_replacement(m.group(0), banned, entry["approved"], _starts_sentence(text, m.start()))))
-    return findings
+    return findings + contamination.run(text, big)   # wording from the user's other brands, when the gateway sends them
