@@ -57,6 +57,10 @@ no visible control is removed from the tab order and that no page needs horizont
 | The judge walkthrough bar starts collapsed on screens narrower than 640 px | It covered about a fifth of a phone screen |
 | Animations are turned off for users who ask for reduced motion | Respects `prefers-reduced-motion` |
 
+## 3b. Round 3 pages
+
+The axe audit now also covers the Drift page, the new image review page, the paged queue, the Brand assets section and the public client report, in light and dark mode where the page is part of `npm run a11y`, and in the Round 3 browser tests for the rest (0 serious or critical violations). What was built for access: every box on an image is a real button with an accessible name ("Problem 2: Visual §2.2 Logo colours") and the same list is available as text next to the image; every drift chart has a text description and a table with the same numbers; the client report is plain tables and headings and fits a 320 px screen; a wrong file type is refused before anything is created. **Not done:** a keyboard-only run of the Round 3 flows (the existing keyboard test covers the Round 2 creator journey), and testing with a screen reader or with real people.
+
 ## 4. What is not covered
 
 - **No real user has been observed using Verity.** The scripted checks above prove the markup and keyboard paths work; they do
