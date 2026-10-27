@@ -248,7 +248,7 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
       final_approve: [`${t} received final approval`, null], send_back: [`${t} was sent back: ${reason ?? ''}`, null],
       publish: [`${t} was marked as published`, null] }[action];
     if (msg) await notify(db, { brandId: rev.brand_id, reviewId: rev.id, message: msg[0].slice(0, 300),
-      userIds: msg[1] ? await idsWithRole(db, msg[1]) : [rev.creator_id] });
+      userIds: msg[1] ? await idsWithRole(db, msg[1], rev.brand_id) : [rev.creator_id] });
     res.json({ ...row, actions: nextActions(row.status, req.user.role) });
   }));
 

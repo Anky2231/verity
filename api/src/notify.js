@@ -13,5 +13,6 @@ export async function notify(db, { brandId, reviewId, userIds, message }) {
   } catch (e) { console.error('notify failed:', e.message); }
 }
 
-export const idsWithRole = async (db, roles) =>
-  (await db.query('SELECT id FROM users WHERE role = ANY($1::text[])', [roles])).map((u) => u.id);
+// Users who hold one of these roles *in this brand*, so a manager at Brand A is never told about Brand B.
+export const idsWithRole = async (db, roles, brandId) =>
+  (await db.query('SELECT user_id AS id FROM brand_memberships WHERE brand_id=$1 AND role = ANY($2::text[])', [brandId, roles])).map((u) => u.id);
