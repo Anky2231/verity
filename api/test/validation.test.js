@@ -111,3 +111,17 @@ test('GET /audit: invalid paging and filter values are 400s', async () => {
   for (const q of ['limit=0', 'limit=1001', 'before_id=5', 'limit=2&before_id=x', 'review_id=abc'])
     assert.equal((await call('manager', 'GET', `/audit?${q}`)).status, 400, q);
 });
+
+test('GET /reviews?q= searches titles, ignoring case, and treats % and _ literally', async () => {
+  await call('creator', 'POST', '/reviews', { title: 'Autumn Harvest 100% promo' });
+  await call('creator', 'POST', '/reviews', { title: 'Autumn Harvest 100 percent' });
+  const hit = async (q) => (await call('creator', 'GET', `/reviews?q=${encodeURIComponent(q)}`)).body.map((r) => r.title);
+  assert.deepEqual(await hit('autumn harvest 100%'), ['Autumn Harvest 100% promo']);
+  assert.equal((await hit('harvest')).length, 2);
+  assert.deepEqual(await hit('zzz-no-such-title'), []);
+  assert.ok((await hit('')).length > 2, 'an empty search is no search');
+  assert.deepEqual(await hit('100_'), [], '_ is not a wildcard');
+  assert.equal((await call('creator', 'GET', `/reviews?q=${'x'.repeat(101)}`)).body.error, 'invalid_q');
+  const page = (await call('creator', 'GET', '/reviews?q=harvest&limit=1')).body;
+  assert.equal(page.items.length, 1); assert.ok(page.next_cursor, 'search works together with paging');
+});
