@@ -20,6 +20,9 @@ export function createApp({ db, log } = {}) {
   app.use(securityHeaders);
   app.use(requestLog(log));
   app.use(cors({ origin: process.env.WEB_ORIGIN || true, exposedHeaders: ['X-Request-Id', 'Retry-After'] }));
+  // Uploads travel as base64 inside JSON, which is a third bigger than the file. These routes get room for the files they
+  // document (6 MB images, 5 MB guideline files); every other route keeps the 2 MB limit.
+  app.use(['/brand-assets', '/brand/extract', /^\/reviews\/[^/]+\/image$/], express.json({ limit: '9mb' }));
   app.use(express.json({ limit: '2mb' }));
 
   app.get('/health', (_req, res) =>
