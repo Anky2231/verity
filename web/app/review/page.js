@@ -366,7 +366,7 @@ function ReviewInner() {
           {open.map((f) => (
             <div key={f.id} className={`item ${f.id === activeId ? 'active' : ''}`}>
               <button type="button" className="item-head" aria-expanded={f.id === activeId} onClick={() => setActiveId(f.id)}>
-                <span className="badge">{f.finding.agent}</span><span className="badge" title={TIPS.severity}>{f.severity}</span>
+                <span className="badge" title={f.finding.agent === 'brand' ? "Wording that belongs to another brand you also work on" : undefined}>{f.finding.agent === 'brand' ? 'other brand' : f.finding.agent}</span><span className="badge" title={TIPS.severity}>{f.severity}</span>
                 <span className="badge" title={TIPS.confidence}>{Math.round(f.finding.confidence * 100)}% conf</span>
                 {f.finding.kind === 'suggestion' && <span className="badge amber" title={TIPS.confidence}>suggestion</span>}
                 <span style={{ display: 'block', marginTop: 6 }}>“{f.finding.quoted_text}”</span>
