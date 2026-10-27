@@ -67,6 +67,11 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
     const params = [req.brand, req.user.sub];
     const where = [`r.brand_id=$1`, req.user.role === 'creator' ? 'r.creator_id = $2' : '$2::text IS NOT NULL'];
     if (req.query.status) { params.push(req.query.status); where.push(`r.status=$${params.length}`); }
+    if (req.query.q !== undefined) {
+      const q = String(req.query.q).trim();
+      if (q.length > 100) return res.status(400).json({ error: 'invalid_q', detail: 'q is at most 100 characters' });
+      if (q) { params.push(`%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`); where.push(`r.title ILIKE $${params.length}`); }   // % and _ in the search are literal
+    }
     if (after) { params.push(after.t, after.id); where.push(`(r.updated_at, r.id) < ($${params.length - 1}::timestamptz, $${params.length}::bigint)`); }
     if (paged) params.push(limitN + 1);
     const rows = await db.query(
