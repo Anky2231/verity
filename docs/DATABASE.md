@@ -70,6 +70,20 @@ Every domain table carries `brand_id`, so supporting several brands in Round 3 i
 `audit_log` rejects `UPDATE`, `DELETE` and `TRUNCATE` with a trigger, and `UNIQUE (brand_id, prev_hash)` stops two writers
 from forking the chain.
 
+## Migrations
+| File | What it adds |
+|---|---|
+| `001_init.sql` | orgs, brands, users, big_versions, reviews, revisions, flag_decisions, comments, the append-only hash-chained audit_log |
+| `002_brand_assets.sql` | brand_assets (empty groundwork in Round 2) |
+| `003_notifications.sql` | notifications |
+| `004_indexes.sql` | the five measured indexes below |
+| `005_brand_memberships.sql` | a user's role per brand (Round 3, multi-brand) |
+| `006_share_links.sql` | read-only client report links; only a hash of the token is stored |
+| `007_drift.sql` | `team` on memberships, and drift_digests with `UNIQUE (brand_id, week)` so a weekly digest and its alerts happen once |
+| `008_visual.sql` | brand asset kinds (logo, retired logo, palette), colour name and hex, and review_images (the uploaded image behind each image revision) |
+
+Images are stored in PostgreSQL (`bytea`), not in object storage: logos are limited to 2 MB and reviewed images to 6 MB, and keeping them in the database keeps them under the same brand scoping and backups as everything else.
+
 ## Indexes and what they were measured to do
 
 Migration `004_indexes.sql` adds five indexes. They were chosen from the queries the API runs, then measured; one candidate that
