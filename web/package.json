@@ -12,7 +12,8 @@
     "a11y": "node e2e/a11y.mjs",
     "keyboard": "node e2e/keyboard.mjs",
     "waking": "node e2e/waking.mjs",
-    "multibrand": "node e2e/multibrand.mjs"
+    "multibrand": "node e2e/multibrand.mjs",
+    "drift": "node e2e/drift.mjs"
   },
   "dependencies": {
     "@tiptap/core": "^2.27.3",
