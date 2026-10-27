@@ -22,6 +22,14 @@ export async function api(path, { token, ...opts } = {}) {
   return res.json();
 }
 
+// An image from the API as a blob: URL. <img src> cannot send the Authorization header, so the file is fetched with it first.
+// The caller should URL.revokeObjectURL the result when it is no longer shown.
+export async function fetchBlobUrl(path, token) {
+  const res = await fetch(`${API}${path}`, { headers: { authorization: `Bearer ${token}`, ...brandHeader() } });
+  if (!res.ok) throw new ApiError(res.status, path, null);
+  return URL.createObjectURL(await res.blob());
+}
+
 // Reads a text/event-stream POST response (EventSource cannot POST) and calls onEvent(name, data).
 export async function postStream(path, { token, body, onEvent }) {
   const res = await fetch(`${API}${path}`, {
@@ -56,6 +64,10 @@ export function explain(e, fallback = 'Something went wrong. Please try again.')
   if (e?.status === 429) return `You are going a bit fast. Try again in ${e.body?.retry_after ?? e.body?.retryAfter ?? 'a few'} seconds.`;
   if (code === 'ai_unavailable' || e?.status === 502) return 'The review service is not reachable right now. Please retry in a moment.';
   if (code === 'unreadable_file') return 'We could not read that file. Use a text-based PDF, DOCX, TXT or MD file.';
+  if (code === 'unsupported_image') return 'Use a PNG, JPEG, WebP or GIF image.';
+  if (code === 'unreadable_image') return 'That file could not be read as an image. Try exporting it again as PNG or JPEG.';
+  if (code === 'file_too_large' || e?.status === 413) return 'That file is too large.';
+  if (code === 'palette_full') return 'A palette holds at most 24 colours.';
   if (code === 'invalid_state') return 'That is not possible in the current state of the review.';
   if (code === 'self_approval_forbidden') return 'You cannot approve content you created.';
   if (code === 'reason_required') return 'A reason is required for that action.';
