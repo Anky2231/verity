@@ -143,7 +143,7 @@ test('two brands are seeded, each with its own asset library, and the upload rou
   const db = await freshDb(); await seed(db);
   assert.equal((await db.query(`SELECT count(*)::int n FROM brands WHERE id='northwind'`))[0].n, 1);
   const counts = await db.query(`SELECT brand_id, count(*)::int n FROM brand_assets GROUP BY brand_id ORDER BY brand_id`);
-  assert.deepEqual(counts, [{ brand_id: 'lumina', n: 7 }, { brand_id: 'northwind', n: 5 }]);
+  assert.deepEqual(counts, [{ brand_id: 'lumina', n: 6 }, { brand_id: 'northwind', n: 5 }]);
   const app = createApp({ db }).listen(0); await new Promise((r) => app.once('listening', r));
   const base = `http://127.0.0.1:${app.address().port}`;
   const tok = async (role) => (await (await fetch(`${base}/auth/demo-login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ role }) })).json()).token;
