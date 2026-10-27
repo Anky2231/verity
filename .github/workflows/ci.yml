@@ -36,6 +36,7 @@ jobs:
         env:
           REDIS_URL: redis://127.0.0.1:6379
           AI_SERVICE_URL: http://127.0.0.1:8000
+          VISUAL_REAL_AI: '1'
       - run: npm audit --audit-level=high
         continue-on-error: true
   web:
