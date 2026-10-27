@@ -13,6 +13,9 @@ export async function seed(db) {
     await db.query(`INSERT INTO users (id, org_id, name, email, role) VALUES ($1,'org_demo',$2,$3,$4) ON CONFLICT DO NOTHING`,
       [u.id, u.name, u.email, u.role]);
   }
+  // Each demo user belongs to Lumina with their default role.
+  for (const u of DEMO_USERS)
+    await db.query(`INSERT INTO brand_memberships (user_id, brand_id, role) VALUES ($1,'lumina',$2) ON CONFLICT DO NOTHING`, [u.id, u.role]);
   await db.query(`INSERT INTO big_versions (brand_id, version, data, created_by) VALUES ('lumina', 1, $1, 'u_rajan') ON CONFLICT DO NOTHING`,
     [JSON.stringify(BIG)]);
 }
