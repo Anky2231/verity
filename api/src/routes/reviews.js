@@ -8,7 +8,8 @@ import fs from 'node:fs';
 import { computeCalibration } from '../calibration.js';
 import { LruCache, hashKey, rateLimiter } from '../limits.js';
 import { notify, idsWithRole } from '../notify.js';
-import { validateNewReview, validateComment, validateDecision, validateReason } from '../validate.js';
+import { validateNewReview, validateComment, validateDecision, validateReason, readImageUpload, MAX_IMAGE_BYTES } from '../validate.js';
+import crypto from 'node:crypto';
 
 // Precomputed result for the built-in sample only: used (and labelled) if the AI service is unreachable.
 const DEMO = JSON.parse(fs.readFileSync(new URL('../../seed/sample_result.json', import.meta.url), 'utf8'));
@@ -166,6 +167,7 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
   async function prepareRun(req, res) {
     const rev = await load(req, res); if (!rev) return null;
     if (!['draft', 'changes_requested'].includes(rev.status)) { res.status(409).json({ error: 'invalid_state', detail: 'review is locked while in approval' }); return null; }
+    if (rev.content_type === 'image') { res.status(400).json({ error: 'image_review', detail: 'this is an image review: upload an image instead of text' }); return null; }
     const text = req.body?.text;
     if (typeof text !== 'string' || !text.trim()) { res.status(400).json({ error: 'text_required' }); return null; }
     if (text.length > MAX_TEXT) { res.status(413).json({ error: 'text_too_long' }); return null; }
@@ -194,6 +196,59 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
       emit('done', { revision, ...out.result });
     } catch { emit('error', { error: 'ai_unavailable' }); }
     res.end();
+  }));
+
+  // VisualGuard: check an uploaded image against the brand's logos and palette, and store the result as the next revision.
+  r.post('/:id/image', requireRole('creator', 'manager', 'admin'), wrap(async (req, res) => {
+    const rev = await load(req, res); if (!rev) return;
+    if (rev.content_type !== 'image') return res.status(400).json({ error: 'not_an_image_review', detail: 'create the review with content_type "image"' });
+    if (!['draft', 'changes_requested'].includes(rev.status)) return res.status(409).json({ error: 'invalid_state', detail: 'review is locked while in approval' });
+    const up = readImageUpload(req.body, MAX_IMAGE_BYTES);
+    if (up.error) return res.status(up.status ?? 400).json(up.error);
+    const filename = String(req.body.filename ?? 'image').slice(0, 200);
+    const lim = limit(req.user.sub);
+    if (!lim.ok) return res.set('retry-after', String(lim.retryAfter)).status(429).json({ error: 'rate_limited', retry_after: lim.retryAfter });
+
+    const assets = await db.query(`SELECT id, kind, name, hex, filename, data FROM brand_assets WHERE brand_id=$1 ORDER BY id`, [rev.brand_id]);
+    const logo = (a) => ({ id: String(a.id), name: a.name ?? a.filename, data_base64: a.data.toString('base64') });
+    const payload = {
+      palette: assets.filter((a) => a.kind === 'palette').map((a) => ({ name: a.name, hex: a.hex })),
+      logos: assets.filter((a) => a.kind === 'logo').map(logo),
+      retired_logos: assets.filter((a) => a.kind === 'retired_logo').map(logo),
+    };
+    const calibration = await computeCalibration(db, rev.brand_id);
+    const key = hashKey('image', rev.brand_id, crypto.createHash('sha256').update(up.bytes).digest('hex'),
+      JSON.stringify([payload.palette, payload.logos.map((l) => l.id), payload.retired_logos.map((l) => l.id)]), JSON.stringify(calibration.cutoffs));
+    let result = cache.get(key), source = 'cache';
+    if (!result) {
+      try {
+        result = await aiFetch('/visual/review', { method: 'POST', body: JSON.stringify({
+          image_base64: up.bytes.toString('base64'), filename, ...payload, calibration: calibration.cutoffs }) });
+      } catch (e) {
+        if (/ai 4(22|13)/.test(e.message)) return res.status(422).json({ error: 'unreadable_image', detail: 'that file could not be read as an image' });
+        return res.status(502).json({ error: 'ai_unavailable' });
+      }
+      cache.set(key, result); source = 'ai';
+    }
+    const [row] = await db.query(
+      `INSERT INTO revisions (review_id, brand_id, number, text, score, result)
+       SELECT $1, $2, coalesce(max(number),0)+1, $3, $4, $5::jsonb FROM revisions WHERE review_id=$1 RETURNING number`,
+      [rev.id, rev.brand_id, `[image] ${filename}`, result.score, JSON.stringify({ ...result, text: `[image] ${filename}` })]);
+    await db.query('INSERT INTO review_images (review_id, brand_id, revision_number, filename, mime, data, width, height) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+      [rev.id, rev.brand_id, row.number, filename, up.mime, up.bytes, result.image?.width ?? null, result.image?.height ?? null]);
+    await db.query('UPDATE reviews SET updated_at=now() WHERE id=$1', [rev.id]);
+    await audit(db, { brandId: rev.brand_id, reviewId: rev.id, actor: req.user, action: 'review.ran',
+      detail: { revision: row.number, score: result.score, flags: flagCount(result), kind: 'image', source, filename,
+        agents: (result.agents ?? []).map((a) => ({ agent: a.agent, status: a.status, mode: a.mode, latency_ms: a.latency_ms })) } });
+    res.json({ revision: row.number, ...result, text: `[image] ${filename}` });
+  }));
+
+  // The image behind one revision, for the review page. Same visibility rules as the review itself.
+  r.get('/:id/image/:n', wrap(async (req, res) => {
+    const rev = await load(req, res); if (!rev) return;
+    const [img] = await db.query('SELECT mime, data FROM review_images WHERE review_id=$1 AND revision_number=$2', [rev.id, Number(req.params.n) || 0]);
+    if (!img) return res.status(404).json({ error: 'not_found' });
+    res.set({ 'content-type': img.mime, 'cache-control': 'private, max-age=300' }).send(img.data);
   }));
 
   // Human decision on one AI flag (or a manually added one). Dispute/override require a reason.
