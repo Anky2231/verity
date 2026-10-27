@@ -13,7 +13,8 @@
     "keyboard": "node e2e/keyboard.mjs",
     "waking": "node e2e/waking.mjs",
     "multibrand": "node e2e/multibrand.mjs",
-    "drift": "node e2e/drift.mjs"
+    "drift": "node e2e/drift.mjs",
+    "visual": "node e2e/visual.mjs"
   },
   "dependencies": {
     "@tiptap/core": "^2.27.3",
