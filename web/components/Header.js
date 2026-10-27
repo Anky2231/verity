@@ -38,7 +38,8 @@ export default function Header() {
   }
   function chooseBrand(id) {
     setMenu(null);
-    if (id !== brand?.id) { switchBrand(id); router.push('/queue'); }
+    // A full page load, so nothing from the previous brand (lists, open reviews, notifications) can stay on screen.
+    if (id !== brand?.id) { switchBrand(id); window.location.assign('/queue'); }
   }
   async function openBell() {
     setMenu(menu === 'bell' ? null : 'bell');
