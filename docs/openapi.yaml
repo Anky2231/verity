@@ -565,7 +565,7 @@ components:
       type: object
       required: [anchor_week, baseline_weeks, window_weeks, threshold, min_ratio, teams, digest]
       properties:
-        anchor_week: { type: [string, 'null'], description: The latest week with any review, Monday date }
+        anchor_week: { type: [string, 'null'], description: 'The latest week with any review, as a Monday date' }
         baseline_weeks: { type: integer }
         window_weeks: { type: integer }
         threshold: { type: number }
