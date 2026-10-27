@@ -43,7 +43,7 @@ export function assetsRouter({ db }) {
     const [row] = await db.query(`SELECT mime, data FROM brand_assets WHERE id=$1 AND brand_id=$2 AND data IS NOT NULL`, [Number(req.params.id) || 0, req.brand]);
     if (!row) return res.status(404).json({ error: 'not_found' });
     res.setHeader('content-type', row.mime);   // setHeader, not res.set: Express would append a text charset to an image type
-    res.set('cache-control', 'private, max-age=300').send(row.data);
+    res.set('cache-control', 'private, max-age=300').send(Buffer.from(row.data));   // PGlite returns a Uint8Array, which Express would send as JSON
   }));
 
   r.delete('/brand-assets/:id', editor, wrap(async (req, res) => {

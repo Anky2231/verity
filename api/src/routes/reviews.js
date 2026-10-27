@@ -210,7 +210,7 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
     if (!lim.ok) return res.set('retry-after', String(lim.retryAfter)).status(429).json({ error: 'rate_limited', retry_after: lim.retryAfter });
 
     const assets = await db.query(`SELECT id, kind, name, hex, filename, data FROM brand_assets WHERE brand_id=$1 ORDER BY id`, [rev.brand_id]);
-    const logo = (a) => ({ id: String(a.id), name: a.name ?? a.filename, data_base64: a.data.toString('base64') });
+    const logo = (a) => ({ id: String(a.id), name: a.name ?? a.filename, data_base64: Buffer.from(a.data).toString('base64') });
     const payload = {
       palette: assets.filter((a) => a.kind === 'palette').map((a) => ({ name: a.name, hex: a.hex })),
       logos: assets.filter((a) => a.kind === 'logo').map(logo),
@@ -249,7 +249,7 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
     const [img] = await db.query('SELECT mime, data FROM review_images WHERE review_id=$1 AND revision_number=$2', [rev.id, Number(req.params.n) || 0]);
     if (!img) return res.status(404).json({ error: 'not_found' });
     res.setHeader('content-type', img.mime);   // setHeader, not res.set: Express would append a text charset to an image type
-    res.set('cache-control', 'private, max-age=300').send(img.data);
+    res.set('cache-control', 'private, max-age=300').send(Buffer.from(img.data));
   }));
 
   // Human decision on one AI flag (or a manually added one). Dispute/override require a reason.
