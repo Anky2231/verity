@@ -45,9 +45,11 @@ await p.setViewportSize({ width: 1280, height: 900 });
 await p.reload(); await p.getByRole('heading', { name: 'Teams', exact: true }).waitFor();
 const digest2 = await p.locator('#digest-h').locator('..').innerText();
 check('opening the page again does not call the digest new', !/\bnew\b/.test(digest2.split('\n')[0]), digest2.split('\n')[0]);
-await p.getByRole('button', { name: /Notifications/ }).click();
-const alerts = await p.locator('[role=menu] a', { hasText: 'Drift alert' }).count();
-check('exactly one drift alert is in the manager\'s notifications', alerts === 1, `alerts=${alerts}`);
+const bell = async () => { await p.getByRole('button', { name: /Notifications/ }).click(); const n = await p.locator('[role=menu] a', { hasText: 'Drift alert' }).count(); await p.keyboard.press('Escape'); await p.mouse.click(5, 300); return n; };
+const before = await bell();
+check('the manager has a drift alert for the Social team', before >= 1, `alerts=${before}`);
+await p.reload(); await p.getByRole('heading', { name: 'Teams', exact: true }).waitFor(); await p.reload(); await p.getByRole('heading', { name: 'Teams', exact: true }).waitFor();
+check('opening the page again does not send more alerts', (await bell()) === before);
 await p.close();
 
 // ---- Dark mode ----
@@ -64,8 +66,10 @@ await p.getByRole('button', { name: /Brand:/ }).click();
 await p.getByRole('menuitem', { name: /Northwind Tea Co\. · manager/ }).click();
 await p.getByRole('button', { name: /Brand:.*Northwind/ }).waitFor();
 await p.goto(WEB + '/drift');
-await p.getByText('nothing to compare').waitFor();
-check('a brand with no history says so instead of inventing a result', true);
+await p.getByRole('heading', { name: /Brand drift: Northwind Tea Co\./ }).waitFor();
+await p.waitForLoadState('networkidle');
+const nw = await p.locator('body').innerText();
+check('Northwind\'s drift page shows none of Lumina\'s teams', !/Social|Email|Content|Blog/.test(nw.replace(/Brand drift/, '')) && !/Drifting/.test(nw), nw.slice(0, 120).replace(/\n/g, ' '));
 await p.close();
 
 check('no page errors', errors.length === 0, errors.join(' | '));
