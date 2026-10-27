@@ -1,5 +1,10 @@
 export const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
+// The brand the person is working in, sent on every call so the API scopes the request to it.
+export const brandHeader = () => {
+  try { const b = localStorage.getItem('verity_brand'); return b ? { 'x-brand-id': b } : {}; } catch { return {}; }
+};
+
 export class ApiError extends Error {
   constructor(status, path, body) { super(`${status} ${path}`); this.status = status; this.body = body; }
 }
@@ -7,7 +12,7 @@ export class ApiError extends Error {
 export async function api(path, { token, ...opts } = {}) {
   const res = await fetch(`${API}${path}`, {
     ...opts,
-    headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}), ...opts.headers },
+    headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}), ...brandHeader(), ...opts.headers },
   });
   if (!res.ok) {
     let body = null;
@@ -21,7 +26,7 @@ export async function api(path, { token, ...opts } = {}) {
 export async function postStream(path, { token, body, onEvent }) {
   const res = await fetch(`${API}${path}`, {
     method: 'POST', body: JSON.stringify(body),
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}`, ...brandHeader() },
   });
   if (!res.ok) {
     let b = null;
