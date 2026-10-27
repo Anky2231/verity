@@ -15,10 +15,11 @@ COARSE_SIZE = 400          # longest side used for the first, exhaustive search 
 EDGE_BLUR = 2.0            # blur applied to edge maps before matching, in pixels
 MIN_TEMPLATE = 24          # smaller templates have too little detail: they match random corners with high scores
 MIN_DETAIL = 0.01          # windows whose edge map varies less than this are blank, not logos
-MATCH_MIN = 0.60           # normalised correlation of edge maps above which the logo counts as found
+MATCH_MIN = 0.66           # normalised correlation of edge maps above which the logo counts as found
 SCALES = np.geomspace(0.25, 2.2, 22)    # sizes tried in the coarse search, relative to the approved file
 ASPECTS = (0.45, 0.55, 0.65, 0.77, 0.88, 1.0, 1.14, 1.3, 1.5, 1.75, 2.1)   # width / height stretch factors tried in the coarse search
 DISTORT_TOLERANCE = 0.10   # a fitted proportion further than 10% from the original counts as distorted
+DISTORT_MIN = 0.72         # a stretched fit has more freedom to match by chance, so it must score higher than an undistorted one
 DISTORT_GAIN = 0.04        # ... and only if it fits clearly better than the undistorted logo
 RECOLOUR_DELTA = 24.0      # delta E between the logo's colour in the image and in the approved file
 CLEAR_SPACE = 0.25         # required empty margin, as a share of the logo's shorter side
@@ -135,6 +136,7 @@ def find_logo(img_rgb: np.ndarray, logo_rgba: np.ndarray, *, min_score: float = 
     best_any = refine(anyfit)
     iso_score = best_iso[0] if best_iso else 0.0
     distorted = abs(best_any[5] - 1.0) > DISTORT_TOLERANCE and best_any[0] >= iso_score + DISTORT_GAIN
+    distorted = distorted and best_any[0] >= DISTORT_MIN
     chosen = best_any if distorted else best_iso
     if chosen is None or chosen[0] < min_score:
         return None
