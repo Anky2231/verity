@@ -16,8 +16,9 @@ export const MIN_BASELINE_REVIEWS = 6;
 export const MIN_WINDOW_REVIEWS = 3;
 const WEEK_MS = 7 * 86400000;
 
-export const weekIndex = (week) => Math.round(Date.parse(`${week}T00:00:00Z`) / WEEK_MS);
-export const weekLabel = (index) => new Date(index * WEEK_MS).toISOString().slice(0, 10);
+const MONDAY = 4 * 86400000;   // 1 January 1970 was a Thursday; shifting by 4 days makes week 0 start on a Monday
+export const weekIndex = (week) => Math.round((Date.parse(`${week}T00:00:00Z`) - MONDAY) / WEEK_MS);
+export const weekLabel = (index) => new Date(index * WEEK_MS + MONDAY).toISOString().slice(0, 10);
 const round = (x, d = 2) => (x == null ? null : +x.toFixed(d));
 
 // reviews: [{ week: 'YYYY-MM-DD' (a Monday), words, flags, clauses: { 'Voice §1.2': 2 } }] for ONE team.
