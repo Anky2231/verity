@@ -62,7 +62,7 @@ test('every operation names its roles and has a summary and at least one respons
   }
 });
 
-const fill = (p) => p.replace('{id}', '999999').replace('{v}', '1').replace('{token}', 'not-a-real-token');
+const fill = (p) => p.replace('{id}', '999999').replace('{v}', '1').replace('{token}', 'not-a-real-token').replace('{n}', '1');
 
 test('no token gets 401 on every protected route', async () => {
   for (const d of documented().filter((x) => !x.op['x-roles'].includes('public'))) {

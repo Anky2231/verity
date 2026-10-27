@@ -188,6 +188,50 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
         '413': { description: 'The text is longer than 20,000 characters', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '429': { $ref: '#/components/responses/RateLimited' }
+  /reviews/{id}/image:
+    post:
+      tags: [Reviews]
+      operationId: postReviewsByIdImage
+      summary: Check an uploaded image with VisualGuard and store it as the next revision
+      description: |
+        The review must have been created with `content_type: image`. The image is checked against the brand's approved logos,
+        retired logos and palette. Findings carry a `region` (a rectangle in the pixels of the analysed image) instead of a text span.
+      x-roles: [creator, manager, admin]
+      parameters: [{ $ref: '#/components/parameters/ReviewId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content_base64]
+              properties:
+                filename: { type: string, maxLength: 200 }
+                content_base64: { type: string, description: 'PNG, JPEG, WebP or GIF, at most 6 MB' }
+      responses:
+        '200': { description: The stored revision with VisualGuard's result, content: { application/json: { schema: { $ref: '#/components/schemas/RunResult' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { description: The image is too large, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '422': { description: The file could not be read as an image, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '502': { $ref: '#/components/responses/AiUnavailable' }
+  /reviews/{id}/image/{n}:
+    get:
+      tags: [Reviews]
+      operationId: getReviewsByIdImageByN
+      summary: The image behind one revision of an image review
+      x-roles: [creator, manager, approver, admin]
+      parameters:
+        - { $ref: '#/components/parameters/ReviewId' }
+        - { name: n, in: path, required: true, description: The revision number, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200': { description: The image, content: { image/png: { schema: { type: string, format: binary } }, image/jpeg: { schema: { type: string, format: binary } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /reviews/{id}/decisions:
     post:
       operationId: postReviewsByIdDecisions
@@ -384,18 +428,6 @@ paths:
         '200': { description: Summary, content: { application/json: { schema: { type: object } } } }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /brand-assets:
-    post:
-      operationId: postBrandAssets
-      tags: [Brand]
-      summary: Upload a brand asset (Round 3, not built yet)
-      description: Role-guarded placeholder for VisualGuard; always answers 501.
-      x-roles: [manager, approver, admin]
-      responses:
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '501': { description: Planned for Round 3, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
   /share-links:
     get:
       tags: [Governance]
@@ -464,6 +496,68 @@ paths:
         '200': { description: Drift analysis for the active brand, content: { application/json: { schema: { $ref: '#/components/schemas/Drift' } } } }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  /brand-assets:
+    get:
+      tags: [Brand]
+      operationId: getBrandAssets
+      summary: The active brand's logos, retired logos and palette colours
+      x-roles: [manager, approver, admin]
+      responses:
+        '200': { description: Assets without their file contents, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/BrandAsset' } } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Brand]
+      operationId: postBrandAssets
+      summary: Add a logo, a retired logo or a palette colour
+      description: |
+        For `logo` and `retired_logo` send `filename` and `content_base64` (a PNG, JPEG, WebP or GIF of at most 2 MB; the type is
+        read from the file's bytes). For `palette` send `name` and `hex`. A palette holds at most 24 colours.
+      x-roles: [manager, admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind]
+              properties:
+                kind: { enum: [logo, retired_logo, palette] }
+                filename: { type: string, maxLength: 200 }
+                name: { type: string, maxLength: 60 }
+                content_base64: { type: string }
+                hex: { type: string, pattern: '^#[0-9a-fA-F]{6}$' }
+      responses:
+        '201': { description: The new asset, content: { application/json: { schema: { $ref: '#/components/schemas/BrandAsset' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { description: The image is too large, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  /brand-assets/{id}/image:
+    get:
+      tags: [Brand]
+      operationId: getBrandAssetsByIdImage
+      summary: The image file of a logo asset
+      x-roles: [manager, approver, admin]
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }]
+      responses:
+        '200': { description: The image, content: { image/png: { schema: { type: string, format: binary } }, image/jpeg: { schema: { type: string, format: binary } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /brand-assets/{id}:
+    delete:
+      tags: [Brand]
+      operationId: deleteBrandAssetsById
+      summary: Remove an asset
+      x-roles: [manager, admin]
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }]
+      responses:
+        '200': { description: Removed, content: { application/json: { schema: { type: object, properties: { ok: { type: boolean } } } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /notifications:
     get:
       operationId: getNotifications
@@ -511,7 +605,7 @@ components:
         error: { type: string, description: A stable machine-readable code }
         detail: { type: string, description: A short human-readable reason }
     Role: { enum: [creator, manager, approver, admin] }
-    ContentType: { enum: [blog, social, email] }
+    ContentType: { enum: [blog, social, email, image] }
     ReviewStatus: { enum: [draft, submitted, changes_requested, escalated, approved, published] }
     Health:
       type: object
@@ -593,6 +687,18 @@ components:
             drifting: { type: array, items: { type: object } }
             created_at: { type: string, format: date-time }
             is_new: { type: boolean, description: True only for the call that created this week's digest }
+    BrandAsset:
+      type: object
+      required: [id, kind]
+      properties:
+        id: { type: integer }
+        kind: { enum: [logo, retired_logo, palette] }
+        name: { type: [string, 'null'] }
+        filename: { type: string }
+        hex: { type: [string, 'null'] }
+        mime: { type: string }
+        size: { type: [integer, 'null'] }
+        created_at: { type: string, format: date-time }
     Claims:
       type: object
       properties: { sub: { type: string }, name: { type: string }, role: { $ref: '#/components/schemas/Role' }, iat: { type: integer }, exp: { type: integer } }
