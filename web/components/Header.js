@@ -6,7 +6,7 @@ import { loginAs, switchBrand, useSession } from '../lib/session';
 import { ago } from '../lib/labels';
 
 const NAV = {
-  creator: [['/queue', 'My reviews'], ['/review', 'New review']],
+  creator: [['/queue', 'My reviews'], ['/review', 'New review'], ['/visual', 'New image review']],
   manager: [['/queue', 'Queue'], ['/brand', 'Brand'], ['/dashboard', 'Dashboard'], ['/drift', 'Drift'], ['/audit', 'Audit']],
   approver: [['/queue', 'Queue'], ['/dashboard', 'Dashboard'], ['/drift', 'Drift'], ['/audit', 'Audit']],
   admin: [['/queue', 'Queue'], ['/brand', 'Brand'], ['/dashboard', 'Dashboard'], ['/drift', 'Drift'], ['/audit', 'Audit']],
