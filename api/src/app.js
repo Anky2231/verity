@@ -6,6 +6,7 @@ import { governanceRouter } from './routes/governance.js';
 import { brandRouter } from './routes/brand.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { signToken, requireAuth, requireRole } from './auth.js';
+import { brandContext } from './brand.js';
 import { createReviewQueue } from './queue.js';
 import { securityHeaders, requestLog } from './http.js';
 
@@ -43,6 +44,12 @@ export function createApp({ db, log } = {}) {
   });
 
   app.get('/me', requireAuth, (req, res) => res.json(req.user));
+
+  // The brands the signed-in user belongs to, with their role in each (feeds the brand switcher).
+  if (db) app.get('/brands', requireAuth, async (req, res) => {
+    res.json(await db.query(
+      `SELECT b.id, b.name, m.role FROM brand_memberships m JOIN brands b ON b.id=m.brand_id WHERE m.user_id=$1 ORDER BY m.id`, [req.user.sub]));
+  });
 
   const aiFetch = async (path, init = {}) => {
     const r = await fetch(`${process.env.AI_SERVICE_URL}${path}`, {

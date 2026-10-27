@@ -53,3 +53,12 @@ test('production refuses to start without a private JWT secret', async () => {
   assert.doesNotThrow(() => assertSecret({ NODE_ENV: 'production', JWT_SECRET: 'a-long-private-value' }));
   assert.doesNotThrow(() => assertSecret({}), 'local development keeps working without the variable');
 });
+
+test('GET /brands lists the brands a user belongs to, with their role in each', async () => {
+  const get2 = async (role) => (await (await get('/brands', await login(role))).json());
+  assert.deepEqual(await get2('creator'), [
+    { id: 'lumina', name: 'Lumina Coffee Co.', role: 'creator' },
+    { id: 'northwind', name: 'Northwind Tea Co.', role: 'manager' }]);
+  assert.deepEqual((await get2('manager')).map((b) => `${b.id}:${b.role}`), ['lumina:manager', 'northwind:creator']);
+  assert.equal((await get('/brands')).status, 401);
+});

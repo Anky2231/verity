@@ -80,6 +80,16 @@ paths:
       responses:
         '200': { description: Token claims, content: { application/json: { schema: { $ref: '#/components/schemas/Claims' } } } }
         '401': { $ref: '#/components/responses/Unauthenticated' }
+  /brands:
+    get:
+      tags: [Brand]
+      operationId: getBrands
+      summary: The brands the signed-in user belongs to, with their role in each
+      description: Send the chosen brand's id as the `X-Brand-Id` header on every other call. Without it, the first brand is used.
+      x-roles: [creator, manager, approver, admin]
+      responses:
+        '200': { description: Brands, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/BrandMembership' } } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
   /sample:
     get:
       operationId: getSample
@@ -447,6 +457,10 @@ components:
       type: object
       required: [id, name, email, role]
       properties: { id: { type: string }, name: { type: string }, email: { type: string }, role: { $ref: '#/components/schemas/Role' } }
+    BrandMembership:
+      type: object
+      required: [id, name, role]
+      properties: { id: { type: string }, name: { type: string }, role: { $ref: '#/components/schemas/Role' } }
     Claims:
       type: object
       properties: { sub: { type: string }, name: { type: string }, role: { $ref: '#/components/schemas/Role' }, iat: { type: integer }, exp: { type: integer } }
