@@ -4,9 +4,11 @@ import re
 from ..models import Finding, Span
 from ..retrieval import Retriever
 
+# "best" is a claim on its own ("the best coffee") but not inside the compound "best-in-class", which is jargon for ToneGuard.
+# "only" is a claim as an exclusivity statement ("the only roaster"), not as a promo qualifier ("Limited time only", "Online only").
 # Percentages sit outside the \b group: there is no word boundary between "%" and a following space.
 CLAIM_PATTERNS = re.compile(
-    r"\b(best|#1|number one|leading|market-leading|best in class|guarantee[ds]?|proven|only|"
+    r"\b(best(?![-\u2011])|#1|number one|leading|market-leading|best in class|guarantee[ds]?|proven|the only|one and only|"
     r"\d+\s?(hours?|days?|farms?)|compostable|sustainable|organic)\b|\d+(\.\d+)?\s?%", re.IGNORECASE)
 
 
