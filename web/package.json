@@ -14,7 +14,8 @@
     "waking": "node e2e/waking.mjs",
     "multibrand": "node e2e/multibrand.mjs",
     "drift": "node e2e/drift.mjs",
-    "visual": "node e2e/visual.mjs"
+    "visual": "node e2e/visual.mjs",
+    "queue": "node e2e/queue.mjs"
   },
   "dependencies": {
     "@tiptap/core": "^2.27.3",
