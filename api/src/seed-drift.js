@@ -2,10 +2,10 @@ import { audit } from './audit.js';
 import { prng, buildRevision, CLEAN, TERM, CLAIM, CLAIMS, TONE } from './seed-history.js';
 
 // Ten weeks of reviews from three teams at Lumina, so the Drift page has something real to analyse.
-// Social drifts: from week 6 its writers slip back into jargon (Voice §1.2) and the violation rate rises about 2.5 times.
+// Social drifts: from week 6 its writers slip back into jargon (Voice §1.2) and the violation rate rises about 3 times.
 // Email and Blog stay steady. Deterministic, idempotent, and every result is marked `seeded: true`.
 const BRAND = 'lumina';
-const WEEKS = 10, DRIFT_START = 6, DRIFT_FACTOR = 2.5, BASE_RATE = 3.0;   // violations per 100 words
+const WEEKS = 10, DRIFT_START = 6, DRIFT_FACTOR = 3.5, BASE_RATE = 3.0;   // violations per 100 words
 const PEOPLE = [
   { id: 'u_leo', name: 'Leo', team: 'Social', per: 4 }, { id: 'u_sam', name: 'Sam', team: 'Social', per: 0 },
   { id: 'u_priya', name: 'Priya', team: 'Email', per: 3 }, { id: 'u_hana', name: 'Hana', team: 'Blog', per: 3 },
