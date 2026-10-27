@@ -1,0 +1,78 @@
+{
+  "brand_id": "northwind",
+  "version": 1,
+  "tone_profile": {
+    "descriptors": ["calm", "precise", "understated", "quietly knowledgeable"],
+    "do_examples": [
+      "Our leaves are picked by hand in the first flush.",
+      "Steep for three minutes and notice the colour change."
+    ],
+    "dont_examples": [
+      "OMG the BEST tea you will EVER drink!!!",
+      "Unlock a game-changing infusion experience."
+    ]
+  },
+  "rules": [
+    {
+      "id": "r_voice_1",
+      "clause_ref": "Voice §1.1",
+      "type": "tone",
+      "severity": "medium",
+      "text": "Write in a calm, precise voice. No hype, no slang and no corporate jargon."
+    },
+    {
+      "id": "r_voice_2",
+      "clause_ref": "Voice §1.3",
+      "type": "tone",
+      "severity": "low",
+      "text": "Never use exclamation marks and never use all-caps for emphasis."
+    },
+    {
+      "id": "r_claim_1",
+      "clause_ref": "Claims §4.1",
+      "type": "claim",
+      "severity": "high",
+      "text": "Only make product claims listed in the approved claims register. No unqualified superlatives."
+    }
+  ],
+  "glossary": [
+    {
+      "id": "t_1",
+      "approved": "tea leaves",
+      "banned": ["tea bags", "cuppa"],
+      "reason": "We sell whole leaf tea, and slang is off-brand (Terminology §2.1)."
+    },
+    {
+      "id": "t_2",
+      "approved": "guests",
+      "banned": ["customers", "consumers"],
+      "reason": "We say 'guests' for the people we serve (Terminology §2.2)."
+    },
+    {
+      "id": "t_3",
+      "approved": "estate-grown",
+      "banned": ["cheap tea", "bargain tea"],
+      "reason": "Never frame origin around price (Terminology §2.4)."
+    }
+  ],
+  "claims": [
+    {
+      "id": "c_1",
+      "text": "Our leaves are picked by hand on two family estates in Darjeeling",
+      "source_doc": "Estate Report 2025",
+      "page": 3
+    },
+    {
+      "id": "c_2",
+      "text": "Every tin is plastic-free and fully recyclable",
+      "source_doc": "Packaging Brief",
+      "page": 1
+    },
+    {
+      "id": "c_3",
+      "text": "Packed within 72 hours of the final drying",
+      "source_doc": "Operations Handbook",
+      "page": 8
+    }
+  ]
+}
