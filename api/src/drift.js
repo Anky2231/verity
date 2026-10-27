@@ -19,15 +19,15 @@ export const weekLabel = (index) => new Date(index * WEEK_MS).toISOString().slic
 const round = (x, d = 2) => (x == null ? null : +x.toFixed(d));
 
 // reviews: [{ week: 'YYYY-MM-DD' (a Monday), words, flags, clauses: { 'Voice §1.2': 2 } }] for ONE team.
-// -> contiguous weekly points from the first to the last week; weeks with no reviews have reviews 0 and rate null.
-export function weeklySeries(reviews) {
+// -> contiguous weekly points from the first week to the last (or to `until`, so a team that went quiet is read up to today); weeks with no reviews have reviews 0 and rate null.
+export function weeklySeries(reviews, until = null) {
   if (!reviews.length) return [];
   const byWeek = new Map();
   for (const r of reviews) {
     const i = weekIndex(r.week), w = byWeek.get(i) ?? { reviews: 0, words: 0, flags: 0 };
     w.reviews++; w.words += r.words; w.flags += r.flags; byWeek.set(i, w);
   }
-  const indexes = [...byWeek.keys()], first = Math.min(...indexes), last = Math.max(...indexes);
+  const indexes = [...byWeek.keys()], first = Math.min(...indexes), last = Math.max(...indexes, until ? weekIndex(until) : -Infinity);
   return Array.from({ length: last - first + 1 }, (_, k) => {
     const w = byWeek.get(first + k) ?? { reviews: 0, words: 0, flags: 0 };
     return { week: weekLabel(first + k), index: first + k, ...w, rate: w.words ? (w.flags / w.words) * 100 : null };
@@ -95,9 +95,8 @@ export function buildDrift(reviews) {
   const teams = [...new Set(reviews.map((r) => r.team))].sort();
   const anchor = reviews.length ? weekLabel(Math.max(...reviews.map((r) => weekIndex(r.week)))) : null;
   const out = teams.map((team) => {
-    const mine = reviews.filter((r) => r.team === team), series = weeklySeries(mine), base = baselineOf(series);
-    // Every team is read up to the brand's latest week, so a team that went quiet is not scored on old data.
-    const padded = anchor ? weeklySeries([...mine, { week: anchor, words: 0, flags: 0, clauses: {} }]).map((p, i, a) => (i === a.length - 1 && p.reviews === 1 && !mine.some((r) => r.week === anchor) ? { ...p, reviews: 0 } : p)) : series;
+    const mine = reviews.filter((r) => r.team === team), base = baselineOf(weeklySeries(mine));
+    const padded = weeklySeries(mine, anchor);   // every team is read up to the brand's latest week
     const score = base ? scoreWindow(padded, base, padded.length - 1) : null;
     const status = !base || !score ? 'insufficient_data' : score.drifting ? 'drifting' : 'stable';
     return {
