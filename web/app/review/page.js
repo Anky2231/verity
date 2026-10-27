@@ -24,7 +24,7 @@ const download = (name, text, type) => {
 function ReviewInner() {
   const router = useRouter();
   const idParam = useSearchParams().get('id');
-  const { token, role, ready } = useSession();
+  const { token, role, ready, brand } = useSession();
   const staff = ['manager', 'approver', 'admin'].includes(role);
 
   const [review, setReview] = useState(null);
@@ -97,7 +97,7 @@ function ReviewInner() {
 
   function loadSample(s) {
     editor.commands.setContent(toHtml(s.content));
-    if (!title) setTitle(s.id === 'injection' ? 'Prompt-injection test' : 'Lumina spring campaign post');
+    if (!title) setTitle(s.id === 'injection' ? 'Prompt-injection test' : `${(brand?.name ?? 'Brand').split(' ')[0]} spring campaign post`);
     setResult(null); setFlags([]); setLive(null); setError('');
   }
 
