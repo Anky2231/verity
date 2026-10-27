@@ -17,6 +17,8 @@ function Thumb({ id, token, label }) {
     fetchBlobUrl(`/brand-assets/${id}/image`, token).then((u) => { made = u; live ? setUrl(u) : URL.revokeObjectURL(u); }).catch(() => {});
     return () => { live = false; if (made) URL.revokeObjectURL(made); };
   }, [id, token]);
+  // A blob: URL of an authenticated file, so next/image's optimiser (which fetches by URL) cannot be used.
+  // eslint-disable-next-line @next/next/no-img-element
   return url ? <img src={url} alt={label} style={{ width: 56, height: 56, objectFit: 'contain', background: 'var(--line)', borderRadius: 6 }} /> : <div className="skeleton" style={{ width: 56, height: 56 }} />;
 }
 
