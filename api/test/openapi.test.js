@@ -62,7 +62,7 @@ test('every operation names its roles and has a summary and at least one respons
   }
 });
 
-const fill = (p) => p.replace('{id}', '999999').replace('{v}', '1');
+const fill = (p) => p.replace('{id}', '999999').replace('{v}', '1').replace('{token}', 'not-a-real-token');
 
 test('no token gets 401 on every protected route', async () => {
   for (const d of documented().filter((x) => !x.op['x-roles'].includes('public'))) {
@@ -85,7 +85,7 @@ test('roles outside x-roles get 403, and allowed roles are never turned away', a
 });
 
 test('public routes answer without a token', async () => {
-  for (const d of documented().filter((x) => x.op['x-roles'].includes('public') && x.method === 'GET')) {
+  for (const d of documented().filter((x) => x.op['x-roles'].includes('public') && x.method === 'GET' && !x.path.includes('{'))) {
     const res = await fetch(`${base}${d.path}`); await res.arrayBuffer();
     assert.equal(res.status, 200, d.path);
   }

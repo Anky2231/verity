@@ -396,6 +396,60 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '501': { description: Planned for Round 3, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /share-links:
+    get:
+      tags: [Governance]
+      operationId: getShareLinks
+      summary: Report links created for the active brand (the token itself is never shown again)
+      x-roles: [manager, admin]
+      responses:
+        '200': { description: Links, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ShareLink' } } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Governance]
+      operationId: postShareLinks
+      summary: Create a read-only compliance report link for the active brand
+      description: The response contains the token and the page path. It is shown once; only a hash is stored.
+      x-roles: [manager, admin]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                days: { type: integer, minimum: 1, maximum: 90, description: 'Days until the link expires (default 14)' }
+                label: { type: string, maxLength: 100 }
+      responses:
+        '201': { description: The new link, content: { application/json: { schema: { $ref: '#/components/schemas/NewShareLink' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /share-links/{id}:
+    delete:
+      tags: [Governance]
+      operationId: deleteShareLinksById
+      summary: Revoke a report link
+      x-roles: [manager, admin]
+      parameters: [{ name: id, in: path, required: true, description: The share link id, schema: { type: integer, minimum: 1 } }]
+      responses:
+        '200': { description: Revoked, content: { application/json: { schema: { type: object, properties: { ok: { type: boolean } } } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /public/report/{token}:
+    get:
+      tags: [Governance]
+      operationId: getPublicReportByToken
+      summary: The read-only compliance report behind a share link (no sign-in)
+      description: A wrong, expired or revoked token all answer 404. Review text, comments and user names are never included.
+      security: []
+      x-roles: [public]
+      parameters: [{ name: token, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: The report, content: { application/json: { schema: { $ref: '#/components/schemas/Report' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
   /notifications:
     get:
       operationId: getNotifications
@@ -461,6 +515,38 @@ components:
       type: object
       required: [id, name, role]
       properties: { id: { type: string }, name: { type: string }, role: { $ref: '#/components/schemas/Role' } }
+    ShareLink:
+      type: object
+      properties:
+        id: { type: integer }
+        label: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        revoked_at: { type: [string, 'null'], format: date-time }
+        active: { type: boolean }
+    NewShareLink:
+      type: object
+      required: [id, token, path, expires_at]
+      properties:
+        id: { type: integer }
+        token: { type: string }
+        path: { type: string, description: The web page that shows the report }
+        label: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+    Report:
+      type: object
+      required: [brand, generated_at, reviews_total, reviews_by_status, score_trend, violations_by_agent, top_clauses, reviews]
+      properties:
+        brand: { type: string }
+        generated_at: { type: string, format: date-time }
+        reviews_total: { type: integer }
+        reviews_by_status: { type: object }
+        avg_score: { type: [integer, 'null'] }
+        score_trend: { type: array, items: { type: object } }
+        violations_by_agent: { type: object }
+        top_clauses: { type: array, items: { type: object, properties: { clause: { type: string }, count: { type: integer } } } }
+        reviews: { type: array, items: { type: object } }
     Claims:
       type: object
       properties: { sub: { type: string }, name: { type: string }, role: { $ref: '#/components/schemas/Role' }, iat: { type: integer }, exp: { type: integer } }
