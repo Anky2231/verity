@@ -16,3 +16,19 @@ export const brandContext = (db) => async (req, res, next) => {
     next();
   } catch (e) { next(e); }
 };
+
+// The other brands this user also works on, reduced to what the contamination check needs: names, approved terms,
+// approved claims and tone examples from each brand's latest guidelines. Only brands the user belongs to are included.
+export async function siblingBrands(db, userId, activeBrand) {
+  const rows = await db.query(
+    `SELECT b.id, b.name, v.data FROM brand_memberships m
+       JOIN brands b ON b.id = m.brand_id
+       JOIN LATERAL (SELECT data FROM big_versions WHERE brand_id = b.id ORDER BY version DESC LIMIT 1) v ON true
+      WHERE m.user_id = $1 AND m.brand_id <> $2 ORDER BY m.id`, [userId, activeBrand]);
+  return rows.map(({ id, name, data }) => ({
+    id, name,
+    terms: (data.glossary ?? []).map((g) => ({ id: g.id, approved: g.approved })),
+    claims: (data.claims ?? []).map((c) => ({ id: c.id, text: c.text })),
+    examples: data.tone_profile?.do_examples ?? [],
+  }));
+}
