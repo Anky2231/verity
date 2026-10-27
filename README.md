@@ -113,6 +113,7 @@ cd web && npm run waking      # simulated sleeping server: the landing page expl
 cd web && npm run multibrand  # one person, two brands: roles, data, other-brand flag, client report link and its revocation
 cd web && npm run drift       # drift page on the seeded history: the planted drift, the digest, the alert, accessibility
 cd web && npm run visual      # image reviews against the real AI service, brand assets, per-brand checking (needs the AI service)
+cd web && npm run keyboard3   # keyboard-only: image review boxes and dispute dialog, drift chart tables
 cd web && npm run queue       # paged and searchable queue
 cd ai  && .venv/bin/python scripts/eval.py  # precision / recall on the dev and held-out text sets (30 texts each)
 cd ai  && .venv/bin/python scripts/calibrate.py  # stated confidence vs measured precision
