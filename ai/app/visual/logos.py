@@ -21,10 +21,10 @@ ASPECTS = (0.45, 0.55, 0.65, 0.77, 0.88, 1.0, 1.14, 1.3, 1.5, 1.75, 2.1)   # wid
 DISTORT_TOLERANCE = 0.10   # a fitted proportion further than 10% from the original counts as distorted
 DISTORT_MIN = 0.72         # a stretched fit has more freedom to match by chance, so it must score higher than an undistorted one
 DISTORT_GAIN = 0.04        # ... and only if it fits clearly better than the undistorted logo
-RECOLOUR_DELTA = 24.0      # delta E between the logo's colour in the image and in the approved file
+RECOLOUR_DELTA = 12.0      # delta E between the logo's colour in the image and in the approved file
 CLEAR_SPACE = 0.25         # required empty margin, as a share of the logo's shorter side
 BUSY_DELTA = 16.0          # a pixel this far from the local background counts as something in the margin
-BUSY_SHARE = 0.04          # share of the margin that may be busy before it is reported
+BUSY_SHARE = 0.015         # share of the margin that may be busy before it is reported
 
 
 @dataclass
@@ -40,16 +40,21 @@ class LogoMatch:
     edge_shortfall: float  # how much of the required margin is missing at the nearest image border (0 = none)
 
 
-def _edges(rgb: np.ndarray, alpha: np.ndarray | None = None) -> np.ndarray:
-    """Gradient magnitude of the lightness channel, normalised to 0..1. Colour changes alone do not matter."""
-    lab = rgb_to_lab(rgb)
-    L = cv2.GaussianBlur(lab[..., 0].astype(np.float32), (0, 0), 1.0)
-    gx, gy = cv2.Sobel(L, cv2.CV_32F, 1, 0, ksize=3), cv2.Sobel(L, cv2.CV_32F, 0, 1, ksize=3)
-    mag = cv2.magnitude(gx, gy)
+def _edges(rgb: np.ndarray, alpha: np.ndarray | None = None, colour: bool = False) -> np.ndarray:
+    """Edge map in 0..1. By default it measures changes of lightness, which suits logos in their usual colours.
+    With colour=True it measures changes of colour in all three Lab channels, which also sees an edge between two colours of
+    the same lightness; this is the second chance for a logo recoloured so far that its lightness contrast is gone."""
+    lab = rgb_to_lab(rgb).astype(np.float32)
+    lab = cv2.GaussianBlur(lab, (0, 0), 1.0)
+    mag = np.zeros(lab.shape[:2], np.float32)
+    for c in ((0, 1, 2) if colour else (0,)):
+        gx, gy = cv2.Sobel(lab[..., c], cv2.CV_32F, 1, 0, ksize=3), cv2.Sobel(lab[..., c], cv2.CV_32F, 0, 1, ksize=3)
+        mag += gx * gx + gy * gy
+    mag = np.sqrt(mag)
     if alpha is not None:   # the outline of the logo is an edge too
         a = cv2.GaussianBlur(alpha.astype(np.float32), (0, 0), 1.0)
         ax, ay = cv2.Sobel(a, cv2.CV_32F, 1, 0, ksize=3), cv2.Sobel(a, cv2.CV_32F, 0, 1, ksize=3)
-        mag = np.maximum(mag, 40 * cv2.magnitude(ax, ay))
+        mag = np.maximum(mag, (160 if colour else 40) * cv2.magnitude(ax, ay))
     mag = cv2.GaussianBlur(mag, (0, 0), EDGE_BLUR)   # soft edges: a slightly wrong size or a JPEG shift still correlates
     peak = float(mag.max())
     return mag / peak if peak > 0 else mag
@@ -75,7 +80,7 @@ def _window_std(edges: np.ndarray, tw: int, th: int) -> np.ndarray:
     return np.sqrt(np.maximum(total(sq) / n - mean ** 2, 0.0))
 
 
-def _best_match(img_edges: np.ndarray, tpl_rgb: np.ndarray, tpl_alpha: np.ndarray, sx: float, sy: float):
+def _best_match(img_edges: np.ndarray, tpl_rgb: np.ndarray, tpl_alpha: np.ndarray, sx: float, sy: float, colour: bool = False):
     h, w = tpl_alpha.shape
     tw, th = round(w * sx), round(h * sy)
     if min(tw, th) < MIN_TEMPLATE:
@@ -86,7 +91,7 @@ def _best_match(img_edges: np.ndarray, tpl_rgb: np.ndarray, tpl_alpha: np.ndarra
     alpha = cv2.resize(tpl_alpha, (tw, th), interpolation=cv2.INTER_AREA)
     # Composite on a mid-grey so the logo's outline shows up as an edge, then take its gradient map.
     flat = (rgb * alpha[..., None] + 128 * (1 - alpha[..., None])).astype(np.uint8)
-    t_edges = _edges(flat, alpha)
+    t_edges = _edges(flat, alpha, colour)
     if t_edges.std() < 1e-4:
         return None
     res = cv2.matchTemplate(img_edges, t_edges, cv2.TM_CCOEFF_NORMED)
@@ -96,12 +101,12 @@ def _best_match(img_edges: np.ndarray, tpl_rgb: np.ndarray, tpl_alpha: np.ndarra
     return float(score), loc, (tw, th), (rgb, alpha)
 
 
-def _grid(edges, tpl, scales, aspects, factor):
+def _grid(edges, tpl, scales, aspects, factor, colour=False):
     """Best (score, loc, size, assets, scale, aspect) over a grid of sizes and stretches."""
     best = None
     for a in aspects:
         for sc in scales:
-            m = _best_match(edges, tpl[0], tpl[1], sc * factor * np.sqrt(a), sc * factor / np.sqrt(a))
+            m = _best_match(edges, tpl[0], tpl[1], sc * factor * np.sqrt(a), sc * factor / np.sqrt(a), colour)
             if m and (best is None or m[0] > best[0]):
                 best = (*m, sc, a)
     return best
@@ -112,7 +117,7 @@ def _shrink(img: np.ndarray, longest: int):
     return (cv2.resize(img, None, fx=f, fy=f, interpolation=cv2.INTER_AREA) if f < 1 else img), f
 
 
-def find_logo(img_rgb: np.ndarray, logo_rgba: np.ndarray, *, min_score: float = MATCH_MIN) -> LogoMatch | None:
+def _find(img_rgb: np.ndarray, logo_rgba: np.ndarray, min_score: float, colour: bool) -> LogoMatch | None:
     """Looks for one logo. Returns None when it is not in the image.
 
     Two stages: an exhaustive search over sizes and stretches on a small copy of the image, then a precise search around
@@ -120,17 +125,17 @@ def find_logo(img_rgb: np.ndarray, logo_rgba: np.ndarray, *, min_score: float = 
     so the logo is reported as distorted only when a stretched version fits clearly better."""
     tpl = split_rgba(logo_rgba)
     coarse, fc = _shrink(img_rgb, COARSE_SIZE)
-    e_coarse = _edges(coarse)
-    iso = _grid(e_coarse, tpl, SCALES, (1.0,), fc)
-    anyfit = _grid(e_coarse, tpl, SCALES, ASPECTS, fc)
+    e_coarse = _edges(coarse, None, colour)
+    iso = _grid(e_coarse, tpl, SCALES, (1.0,), fc, colour)
+    anyfit = _grid(e_coarse, tpl, SCALES, ASPECTS, fc, colour)
     if anyfit is None or anyfit[0] < min_score * 0.7:
         return None
     fine, ff = _shrink(img_rgb, WORK_SIZE)
-    e_fine = _edges(fine)
+    e_fine = _edges(fine, None, colour)
 
     def refine(c):
         sc, a = c[4], c[5]
-        return _grid(e_fine, tpl, sc * np.array([0.9, 0.95, 1.0, 1.05, 1.1]), (a,) if a == 1.0 else (a * 0.9, a, a * 1.1), ff)
+        return _grid(e_fine, tpl, sc * np.array([0.9, 0.95, 1.0, 1.05, 1.1]), (a,) if a == 1.0 else (a * 0.9, a, a * 1.1), ff, colour)
 
     best_iso = refine(iso) if iso else None
     best_any = refine(anyfit)
@@ -146,6 +151,12 @@ def find_logo(img_rgb: np.ndarray, logo_rgba: np.ndarray, *, min_score: float = 
     bbox = {"x": x0, "y": y0, "w": max(1, w0), "h": max(1, h0)}
     return LogoMatch(True, round(score, 3), bbox, round(float(aspect), 2), bool(distorted),
                      _recolour_delta(img_rgb, bbox, rgb, alpha), *_clear_space(img_rgb, bbox))
+
+
+def find_logo(img_rgb: np.ndarray, logo_rgba: np.ndarray, *, min_score: float = MATCH_MIN) -> LogoMatch | None:
+    """Looks for one logo; None when it is not in the image. A first pass matches on lightness edges; only when that finds
+    nothing, a second pass matches on colour edges, which can still find a logo recoloured to the same lightness as its background."""
+    return _find(img_rgb, logo_rgba, min_score, False) or _find(img_rgb, logo_rgba, min_score, True)
 
 
 def _recolour_delta(img: np.ndarray, bbox: dict, tpl_rgb: np.ndarray, tpl_alpha: np.ndarray) -> float:
