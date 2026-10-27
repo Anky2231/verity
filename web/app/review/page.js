@@ -74,7 +74,11 @@ function ReviewInner() {
     setResult(res); setRevNumber(number); setFlags(list); setActiveId(list.find((f) => f.state === 'open')?.id ?? null);
   }, [editor]);
 
-  const refreshReview = useCallback(async (id) => { const r = await api(`/reviews/${id}`, { token }); setReview(r); return r; }, [token]);
+  const refreshReview = useCallback(async (id) => {
+    const r = await api(`/reviews/${id}`, { token });
+    if (r.content_type === 'image') { router.replace(`/visual?id=${id}`); return r; }   // an image review lives on the image page
+    setReview(r); return r;
+  }, [token, router]);
 
   const load = useCallback(async (id) => {
     const r = await refreshReview(id);
