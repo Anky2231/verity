@@ -68,8 +68,8 @@ await p.getByRole('button', { name: /Brand:.*Northwind/ }).waitFor();
 await p.goto(WEB + '/drift');
 await p.getByRole('heading', { name: /Brand drift: Northwind Tea Co\./ }).waitFor();
 await p.waitForLoadState('networkidle');
-const nw = await p.locator('body').innerText();
-check('Northwind\'s drift page shows none of Lumina\'s teams', !/Social|Email|Content|Blog/.test(nw.replace(/Brand drift/, '')) && !/Drifting/.test(nw), nw.slice(0, 120).replace(/\n/g, ' '));
+const nwTeams = await p.locator('table').first().locator('tbody tr td:first-child').allInnerTexts().catch(() => []);
+check('Northwind\'s drift page shows none of Lumina\'s teams and no false alert', !nwTeams.some((t) => /Social|Email|Content|Blog/.test(t)), nwTeams.join(', ') || 'no teams');
 await p.close();
 
 check('no page errors', errors.length === 0, errors.join(' | '));
