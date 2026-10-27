@@ -450,6 +450,20 @@ paths:
         '200': { description: The report, content: { application/json: { schema: { $ref: '#/components/schemas/Report' } } } }
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/RateLimited' }
+  /drift:
+    get:
+      tags: [Governance]
+      operationId: getDrift
+      summary: Brand drift per team, the clauses most likely to be broken next, and this week's digest
+      description: |
+        Each team's violations per 100 words in the last 3 weeks are compared with that team's own first 4 weeks. A team is
+        "drifting" when the rate is at least 3.5 standard errors and 1.3 times above its baseline. Teams with too little
+        history are reported as `insufficient_data`. The first call in a new week stores the digest and notifies managers once.
+      x-roles: [manager, approver, admin]
+      responses:
+        '200': { description: Drift analysis for the active brand, content: { application/json: { schema: { $ref: '#/components/schemas/Drift' } } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /notifications:
     get:
       operationId: getNotifications
@@ -547,6 +561,38 @@ components:
         violations_by_agent: { type: object }
         top_clauses: { type: array, items: { type: object, properties: { clause: { type: string }, count: { type: integer } } } }
         reviews: { type: array, items: { type: object } }
+    Drift:
+      type: object
+      required: [anchor_week, baseline_weeks, window_weeks, threshold, min_ratio, teams, digest]
+      properties:
+        anchor_week: { type: [string, 'null'], description: The latest week with any review, Monday date }
+        baseline_weeks: { type: integer }
+        window_weeks: { type: integer }
+        threshold: { type: number }
+        min_ratio: { type: number }
+        teams:
+          type: array
+          items:
+            type: object
+            required: [team, status, reviews, series, rising_clauses]
+            properties:
+              team: { type: string }
+              status: { enum: [stable, drifting, insufficient_data] }
+              reviews: { type: integer }
+              baseline: { type: [object, 'null'], description: 'rate (violations per 100 words), reviews, weeks' }
+              recent: { type: [object, 'null'] }
+              score: { type: [number, 'null'], description: Standard errors above the baseline }
+              ratio: { type: [number, 'null'], description: Recent rate divided by the baseline rate }
+              series: { type: array, items: { type: object, properties: { week: { type: string }, reviews: { type: integer }, rate: { type: [number, 'null'] } } } }
+              rising_clauses: { type: array, items: { type: object, properties: { clause: { type: string }, baseline_rate: { type: number }, recent_rate: { type: number }, recent_count: { type: integer } } } }
+        digest:
+          type: [object, 'null']
+          properties:
+            week: { type: string }
+            text: { type: string }
+            drifting: { type: array, items: { type: object } }
+            created_at: { type: string, format: date-time }
+            is_new: { type: boolean, description: True only for the call that created this week's digest }
     Claims:
       type: object
       properties: { sub: { type: string }, name: { type: string }, role: { $ref: '#/components/schemas/Role' }, iat: { type: integer }, exp: { type: integer } }
