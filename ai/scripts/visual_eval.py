@@ -53,7 +53,7 @@ def evaluate(split: str, verbose: bool = True):
             continue
         viol_total += 1
         want = lab["expected"][0]
-        # the label's coordinates are in the stored image; decode_image only shrinks above 1600 px, which these never reach
+        # the label's coordinates are in the stored image; decode_image only shrinks above 1200 px, which these never reach
         hit = any(f.rule_id == want and overlaps(f.region, lab["region"]) for f in found)
         viol_hit += hit
         wrong += len(rules - {want})
