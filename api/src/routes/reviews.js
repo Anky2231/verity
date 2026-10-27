@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireRole } from '../auth.js';
-import { brandContext } from '../brand.js';
+import { brandContext, siblingBrands } from '../brand.js';
 import { audit } from '../audit.js';
 import { decide, nextActions } from '../workflow.js';
 import { wordDiff } from '../diff.js';
@@ -98,14 +98,17 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
   }));
 
   // Runs the agents (or serves the cache / the labelled demo fallback). `emit` streams per-agent progress.
-  async function execute(rev, text, emit) {
+  async function execute(rev, text, emit, user) {
     const [big] = await db.query('SELECT data FROM big_versions WHERE brand_id=$1 AND version=$2', [rev.brand_id, rev.big_version]);
     const calibration = await computeCalibration(db, rev.brand_id);
-    const key = hashKey(rev.brand_id, rev.big_version, JSON.stringify(calibration.cutoffs), norm(text));
+    // The user's other brands are checked for wording that slipped across, so they are part of what the result depends on.
+    const siblings = await siblingBrands(db, user.sub, rev.brand_id);
+    const [{ name: brandName }] = await db.query('SELECT name FROM brands WHERE id=$1', [rev.brand_id]);
+    const key = hashKey(rev.brand_id, rev.big_version, JSON.stringify(calibration.cutoffs), JSON.stringify(siblings), norm(text));
     const hit = cache.get(key);
     if (hit) { hit.agents.forEach((a) => emit?.('agent', a)); return { result: { ...hit, cached: true }, source: 'cache' }; }
     const body = { revision_id: `rev_${rev.id}`, brand_id: rev.brand_id, big_version: rev.big_version, content_type: rev.content_type,
-      text, big: big.data, calibration: calibration.cutoffs };
+      text, big: { ...big.data, brand_name: brandName, other_brands: siblings }, calibration: calibration.cutoffs };
     try {
       let result;
       const direct = async () => {
@@ -175,7 +178,7 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
   r.post('/:id/run', requireRole('creator', 'manager', 'admin'), wrap(async (req, res) => {
     const p = await prepareRun(req, res); if (!p) return;
     let out;
-    try { out = await execute(p.rev, p.text); } catch { return res.status(502).json({ error: 'ai_unavailable' }); }
+    try { out = await execute(p.rev, p.text, undefined, req.user); } catch { return res.status(502).json({ error: 'ai_unavailable' }); }
     const revision = await store(p.rev, req, out.result, out.source);
     res.json({ revision, ...out.result });
   }));
@@ -186,7 +189,7 @@ export function reviewsRouter({ db, aiFetch, aiStream, reviewQueue }) {
     res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive', 'x-accel-buffering': 'no' });
     const emit = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     try {
-      const out = await execute(p.rev, p.text, emit);
+      const out = await execute(p.rev, p.text, emit, req.user);
       const revision = await store(p.rev, req, out.result, out.source);
       emit('done', { revision, ...out.result });
     } catch { emit('error', { error: 'ai_unavailable' }); }
