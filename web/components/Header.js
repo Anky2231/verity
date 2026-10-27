@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '../lib/api';
-import { loginAs, useSession } from '../lib/session';
+import { loginAs, switchBrand, useSession } from '../lib/session';
 import { ago } from '../lib/labels';
 
 const NAV = {
@@ -14,7 +14,7 @@ const NAV = {
 const ROLES = [['creator', 'Maya', 'Creator'], ['manager', 'Rajan', 'Manager'], ['approver', 'Anita', 'Approver']];
 
 export default function Header() {
-  const { token, user, role } = useSession();
+  const { token, user, role, brands, brand } = useSession();
   const path = usePathname();
   const router = useRouter();
   const [note, setNote] = useState({ unread: 0, items: [] });
@@ -36,6 +36,10 @@ export default function Header() {
     setMenu(null);
     try { await loginAs(r); router.push('/queue'); } catch { router.push('/'); }
   }
+  function chooseBrand(id) {
+    setMenu(null);
+    if (id !== brand?.id) { switchBrand(id); router.push('/queue'); }
+  }
   async function openBell() {
     setMenu(menu === 'bell' ? null : 'bell');
     if (note.unread) { try { await api('/notifications/read', { token, method: 'POST' }); setTimeout(refresh, 400); } catch { /* ignore */ } }
@@ -51,6 +55,20 @@ export default function Header() {
       <span style={{ flex: 1 }} />
       {user && (
         <>
+          {brands.length > 1 && (
+            <div className="menuwrap">
+              <button onClick={() => setMenu(menu === 'brand' ? null : 'brand')} aria-expanded={menu === 'brand'} aria-haspopup="menu" title="Switch brand">
+                <span className="muted">Brand:</span> <b>{brand?.name}</b> ▾
+              </button>
+              {menu === 'brand' && (
+                <div className="menu" role="menu">
+                  <b style={{ padding: '4px 8px', display: 'block' }}>Switch brand</b>
+                  {brands.map((b) => (
+                    <button key={b.id} className="menuitem" role="menuitem" onClick={() => chooseBrand(b.id)} disabled={b.id === brand?.id}>
+                      {b.name} · {b.role}{b.id === brand?.id ? ' (current)' : ''}
+                    </button>))}
+                </div>)}
+            </div>)}
           <div className="menuwrap">
             <button className="iconbtn" onClick={openBell} aria-label={`Notifications, ${note.unread} unread`} aria-expanded={menu === 'bell'}>
               🔔{note.unread > 0 && <span className="dot">{note.unread}</span>}
@@ -72,7 +90,7 @@ export default function Header() {
             {menu === 'role' && (
               <div className="menu" role="menu">
                 <b style={{ padding: '4px 8px', display: 'block' }}>Switch role (demo)</b>
-                {ROLES.map(([r, n, l]) => <button key={r} className="menuitem" role="menuitem" onClick={() => switchTo(r)} disabled={r === role}>{n} · {l}{r === role ? ' (current)' : ''}</button>)}
+                {ROLES.map(([r, n, l]) => <button key={r} className="menuitem" role="menuitem" onClick={() => switchTo(r)} disabled={r === user.role}>{n} · {l}{r === user.role ? ' (current)' : ''}</button>)}
               </div>)}
           </div>
         </>)}
