@@ -115,7 +115,7 @@ function VisualInner() {
           <form onSubmit={start} className="card" style={{ display: 'grid', gap: 10 }}>
             <label>Title <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder="For example: Spring banner" style={{ width: '100%', boxSizing: 'border-box', padding: 8 }} /></label>
             <label>Image <input ref={file} type="file" accept="image/png,image/jpeg,image/webp,image/gif" /></label>
-            <p className="muted" style={{ margin: 0 }}>PNG, JPEG, WebP or GIF, up to 6 MB. Large images are checked at up to 1600 px.</p>
+            <p className="muted" style={{ margin: 0 }}>PNG, JPEG, WebP or GIF, up to 6 MB. Large images are checked at up to 1200 px.</p>
             <div><button className="primary" type="submit" disabled={busy}>{busy ? 'Checking the image…' : 'Check image'}</button></div>
             {error && <p role="alert" style={{ color: 'var(--red)', margin: 0 }}>{error}</p>}
           </form>)}
