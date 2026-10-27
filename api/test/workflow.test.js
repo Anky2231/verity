@@ -139,15 +139,16 @@ test('analytics: override rate surfaces ambiguous rules', async () => {
   assert.ok(a.body.reviews_by_status.published >= 1);
 });
 
-test('Round 3 groundwork: second brand row exists, brand_assets table exists, upload stub is guarded and says 501', async () => {
+test('two brands are seeded, each with its own asset library, and the upload route is role-guarded and real', async () => {
   const db = await freshDb(); await seed(db);
   assert.equal((await db.query(`SELECT count(*)::int n FROM brands WHERE id='northwind'`))[0].n, 1);
-  assert.equal((await db.query(`SELECT count(*)::int n FROM brand_assets`))[0].n, 0);
+  const counts = await db.query(`SELECT brand_id, count(*)::int n FROM brand_assets GROUP BY brand_id ORDER BY brand_id`);
+  assert.deepEqual(counts, [{ brand_id: 'lumina', n: 7 }, { brand_id: 'northwind', n: 5 }]);
   const app = createApp({ db }).listen(0); await new Promise((r) => app.once('listening', r));
   const base = `http://127.0.0.1:${app.address().port}`;
   const tok = async (role) => (await (await fetch(`${base}/auth/demo-login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ role }) })).json()).token;
-  const post = async (t) => fetch(`${base}/brand-assets`, { method: 'POST', headers: { authorization: `Bearer ${t}` } });
+  const post = async (t) => fetch(`${base}/brand-assets`, { method: 'POST', headers: { authorization: `Bearer ${t}`, 'content-type': 'application/json' }, body: '{}' });
   assert.equal((await post(await tok('creator'))).status, 403);
-  assert.equal((await post(await tok('manager'))).status, 501);
+  assert.equal((await post(await tok('manager'))).status, 400, 'a manager reaches validation, which asks for a valid kind');
   app.close();
 });
