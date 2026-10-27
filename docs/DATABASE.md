@@ -19,6 +19,11 @@ erDiagram
   reviews ||--o{ comments : has
   reviews ||--o{ audit_log : "hash-chained, append-only"
   users ||--o{ notifications : receives
+  users ||--o{ brand_memberships : "role per brand, team"
+  brands ||--o{ brand_memberships : has
+  brands ||--o{ share_links : "read-only report links"
+  brands ||--o{ drift_digests : "one per week"
+  reviews ||--o{ review_images : "image behind an image revision"
   reviews ||--o{ notifications : about
   reviews { bigint id PK
             text brand_id FK
@@ -36,6 +41,23 @@ erDiagram
                    text flag_key
                    text rule_id
                    text decision }
+  brand_memberships { text user_id FK
+                      text brand_id FK
+                      text role
+                      text team }
+  brand_assets { bigint id PK
+                 text brand_id FK
+                 text kind
+                 text hex
+                 bytea data }
+  share_links { bigint id PK
+                text brand_id FK
+                text token_hash
+                timestamptz expires_at
+                timestamptz revoked_at }
+  drift_digests { text brand_id FK
+                  text week
+                  jsonb summary }
   audit_log { bigint id PK
               text brand_id
               bigint review_id
