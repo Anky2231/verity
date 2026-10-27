@@ -118,3 +118,52 @@ def extract(req: ExtractRequest, x_service_token: str | None = Header(default=No
         raise HTTPException(422, "no text found in that file (scanned PDFs are not supported yet)")
     big, notes = extract_big(text, brand_id=req.brand_id)
     return {"big": big, "notes": notes, "chars": len(text)}
+
+
+class AssetIn(BaseModel):
+    id: str
+    name: str = "logo"
+    data_base64: str
+
+
+class ImageReviewRequest(BaseModel):
+    image_base64: str
+    filename: str = "image"
+    palette: list[dict] = []
+    logos: list[AssetIn] = []
+    retired_logos: list[AssetIn] = []
+    calibration: dict[str, float] = {}
+
+
+@app.post("/visual/review")
+async def visual_review(req: ImageReviewRequest, x_service_token: str | None = Header(default=None)):
+    """VisualGuard: check one image against the brand's palette and approved and retired logos."""
+    _auth(x_service_token)
+    import time
+    from .visual import agent as visual
+    t0 = time.perf_counter()
+    try:
+        data = base64.b64decode(req.image_base64, validate=True)
+        if len(data) > 8_000_000:
+            raise HTTPException(413, "image too large (8 MB max)")
+        img, width, height = visual.decode_image(data)
+        assets = {
+            "palette": visual.parse_palette(req.palette),
+            "logos": [{"id": a.id, "name": a.name, "rgba": visual.decode_logo(base64.b64decode(a.data_base64))} for a in req.logos],
+            "retired_logos": [{"id": a.id, "name": a.name, "rgba": visual.decode_logo(base64.b64decode(a.data_base64))} for a in req.retired_logos],
+        }
+    except HTTPException:
+        raise
+    except (visual.ImageError, ValueError) as e:
+        raise HTTPException(422, str(e))
+    # Region findings have no text span, so they skip the span-repair step the text agents go through.
+    try:
+        findings = await asyncio.wait_for(asyncio.to_thread(visual.review_image, img, assets), 45)
+        result = AgentResult(agent="visual", status="ok", findings=findings, latency_ms=int((time.perf_counter() - t0) * 1000))
+    except Exception as e:  # noqa: BLE001 - one failing check must not crash the request
+        result = AgentResult(agent="visual", status="failed", error=str(e)[:200], latency_ms=int((time.perf_counter() - t0) * 1000))
+    ms = int((time.perf_counter() - t0) * 1000)
+    out = merge_results("", [result], req.calibration, {"first_agent_ms": ms, "total_ms": ms})
+    out["image"] = {"width": width, "height": height, "filename": req.filename[:200]}
+    out["agents"] = [{**a, "mode": "image-analysis"} for a in out["agents"]]
+    return out
