@@ -51,6 +51,7 @@ export default function Queue() {
         <h1 style={{ margin: 0 }}>{staff ? 'Review queue' : 'My reviews'}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           {role !== 'approver' && <a href="/review" className="btn primary">+ New review</a>}
+          {role !== 'approver' && <a href="/visual" className="btn">+ New image review</a>}
           <select aria-label="Status filter" value={status} onChange={(e) => setStatus(e.target.value)}>
             {STATUSES.map((s) => <option key={s} value={s}>{s ? STATUS_LABEL[s] : 'All statuses'}</option>)}
           </select>
@@ -68,7 +69,7 @@ export default function Queue() {
               <thead><tr><th>Title</th><th>Creator</th><th>Status</th><th title={TIPS.score}>Score</th><th>Open flags</th><th title={TIPS.delta}>Δ</th><th>Age</th><th>Actions</th></tr></thead>
               <tbody>{rows.map((r) => (
                 <tr key={r.id}>
-                  <td><a href={`/review?id=${r.id}`}>{r.title}</a></td>
+                  <td><a href={`${r.content_type === 'image' ? '/visual' : '/review'}?id=${r.id}`}>{r.title}</a></td>
                   <td>{r.creator_name}</td>
                   <td><span className="badge">{STATUS_LABEL[r.status] ?? r.status}</span></td>
                   <td>{r.score ?? '—'}</td><td>{r.flag_count}</td>
