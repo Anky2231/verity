@@ -73,10 +73,10 @@ export default function Queue() {
     <div className="doc">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <h1 style={{ margin: 0 }}>{staff ? 'Review queue' : 'My reviews'}</h1>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {role !== 'approver' && <a href="/review" className="btn primary">+ New review</a>}
           {role !== 'approver' && <a href="/visual" className="btn">+ New image review</a>}
- <input type="search" aria-label="Search titles" placeholder="Search titles" value={search} onChange={(e) => setSearch(e.target.value)} maxLength={100} style={{ padding: 6 }} />
+ <input type="search" aria-label="Search titles" placeholder="Search titles" value={search} onChange={(e) => setSearch(e.target.value)} maxLength={100} style={{ padding: 6, maxWidth: 180 }} />
           <select aria-label="Status filter" value={status} onChange={(e) => setStatus(e.target.value)}>
             {STATUSES.map((s) => <option key={s} value={s}>{s ? STATUS_LABEL[s] : 'All statuses'}</option>)}
           </select>
