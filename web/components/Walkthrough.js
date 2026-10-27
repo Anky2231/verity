@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { loginAs, parseJwt } from '../lib/session';
+import { loginAs, parseJwt, switchBrand } from '../lib/session';
 import { markProgress, useProgress } from '../lib/progress';
 
 // One-click guided tour for judges. Each step signs in as the right role, opens the right page, and ticks itself when done.
@@ -31,6 +31,7 @@ export default function Walkthrough() {
     setBusy(true);
     try {
       if (parseJwt(localStorage.getItem('verity_token') || '')?.role !== step.role) await loginAs(step.role);
+      switchBrand('lumina');   // the five steps are written for the Lumina sample brand
       router.push(step.href(p));
     } catch { router.push('/'); } finally { setBusy(false); }
   }
