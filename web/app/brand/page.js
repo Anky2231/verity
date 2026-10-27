@@ -12,7 +12,7 @@ const split = (s, re) => s.split(re).map((x) => x.trim()).filter(Boolean);
 const nextId = (list, p) => `${p}_${Math.max(0, ...list.map((x) => Number(String(x.id).split('_').pop()) || 0)) + 1}`;
 
 export default function Brand() {
-  const { token, role, ready } = useSession();
+  const { token, role, ready, brand } = useSession();
   usePageTitle('Brand guidelines');
   const [info, setInfo] = useState(null);
   const [draft, setDraft] = useState(null);   // editable BIG being previewed
@@ -87,7 +87,11 @@ export default function Brand() {
             <input ref={file} type="file" accept=".pdf,.docx,.txt,.md" onChange={onFile} disabled={busy} aria-label="Guideline file" />
             <button className="primary" onClick={() => extract({ use_sample: true, filename: 'sample.md' })} disabled={busy}>{busy ? 'Reading…' : 'Use sample guideline'}</button>
           </div>
-          <p className="muted" style={{ marginBottom: 0 }}>Sample files to try: <a href="/sample/lumina-brand-guidelines.pdf" download>PDF</a> · <a href="/sample/lumina-brand-guidelines.docx" download>DOCX</a> · <a href="/sample/lumina-brand-guidelines.md" download>MD</a></p>
+          <p className="muted" style={{ marginBottom: 0 }}>
+            {brand?.id === 'northwind'
+              ? <>Sample file to try: <a href="/sample/northwind-brand-guidelines.md" download>MD</a></>
+              : <>Sample files to try: <a href="/sample/lumina-brand-guidelines.pdf" download>PDF</a> · <a href="/sample/lumina-brand-guidelines.docx" download>DOCX</a> · <a href="/sample/lumina-brand-guidelines.md" download>MD</a></>}
+          </p>
         </div>)}
       {!allowed && <p className="muted">Only managers can change guidelines. You can see the current version above.</p>}
 
