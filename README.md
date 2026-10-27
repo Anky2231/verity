@@ -30,27 +30,32 @@ Seeded so nothing opens empty: two brands (Lumina Coffee Co. and Northwind Tea C
 ```mermaid
 flowchart LR
   subgraph Browser
-    W[Next.js 14 + TipTap<br/>review editor, queue, brand builder, dashboard]
+    W[Next.js 14 + TipTap<br/>review editor, image review, queue, brand builder,<br/>brand assets, dashboard, drift, client report]
   end
   subgraph API[Node/Express gateway]
-    A[JWT auth + RBAC<br/>workflow state machine<br/>cache, rate limit, SSE]
-    DB[(PostgreSQL<br/>JSONB findings, brand_id everywhere<br/>hash-chained audit log)]
+    A[JWT auth + RBAC<br/>brand context per request<br/>workflow state machine<br/>cache, rate limit, SSE]
+    DB[(PostgreSQL<br/>JSONB findings, brand_id everywhere<br/>brand memberships, hash-chained audit log)]
+    D[Drift analysis<br/>weekly digest]
   end
   R[(Optional Redis + BullMQ)]
   subgraph AI[FastAPI AI service]
     P[Pipeline: agents run in parallel<br/>per-agent timeout and isolation]
     T[ToneGuard]:::a
-    M[TermGuard]:::a
+    M[TermGuard<br/>+ other-brand wording]:::a
     C[ClaimGuard]:::a
-    X[MetaAgent: merge spans, rank, score]
+    X[MetaAgent: merge, rank, score]
+    V[VisualGuard<br/>palette, logos, clear space]:::a
     E[Guideline extractor<br/>PDF / DOCX / TXT / MD]
   end
-  W -- REST + SSE --> A
+  W -- REST + SSE, X-Brand-Id --> A
   A --- DB
+  A --- D
   A -- no REDIS_URL: review, stream, extract --> P
   A -- REDIS_URL set: three agent jobs --> R
   R -- /review/{agent} and /merge --> P
   P --> T & M & C --> X
+  A -- /visual/review: image + brand's logos + palette --> V
+  V --> X
   A -- extract --> E
   classDef a fill:#eef,stroke:#88a
 ```
