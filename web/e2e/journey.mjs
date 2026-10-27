@@ -39,7 +39,7 @@ await p.getByText(/Published as version \d+/).waitFor();
 check('publish creates a new BIG version', true);
 check('walkthrough step 1 ticked', (await p.getByLabel('done').count()) >= 1);
 // upload a real PDF through the file input
-await p.locator('input[type=file]').setInputFiles(path.join(here, '..', 'public', 'sample', 'lumina-brand-guidelines.pdf'));
+await p.getByLabel('Guideline file').setInputFiles(path.join(here, '..', 'public', 'sample', 'lumina-brand-guidelines.pdf'));
 await p.getByText('Preview what was extracted').waitFor();
 check('real PDF upload extracts rules', (await p.getByText('Rules (3)').count()) === 1);
 await p.getByText('Discard').click();
