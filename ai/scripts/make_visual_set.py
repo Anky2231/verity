@@ -96,6 +96,57 @@ def build(name: str, seed0: int):
     print(f"{name}: {n} images")
 
 
+STRESS_KINDS = ("compliant", "recoloured", "retired", "distorted")
+STRESS_DEGRADE = ("heavy_jpeg", "blur", "rotated_logo", "photo_background", "cropped_logo")
+
+
+def make_stress(kind: str, degrade: str, seed: int):
+    """Harder cases than the dev and held-out sets, to show where VisualGuard stops working. Not used for any tuning."""
+    from PIL import ImageFilter
+    rng = np.random.default_rng(seed)
+    w, h = 720, 420
+    lw = 130
+    base = S.banner(int(rng.integers(0, 10_000)), w, h)
+    lx, ly = int(w * 0.72), 50
+    logo = {"recoloured": S.recolour(LOGO, {S.AMBER: "#2060d0"}), "retired": OLD}.get(kind, LOGO)
+    if degrade == "photo_background":
+        yy, xx = np.mgrid[0:h, 0:w]
+        t = (0.6 * xx / w + 0.4 * yy / h)
+        photo = np.stack([200 - 70 * t, 150 - 40 * t + 25 * np.sin(xx / 40), 110 + 60 * t], axis=-1) + rng.normal(0, 9, (h, w, 3))
+        base = np.clip(photo, 0, 255).astype(np.uint8)
+    if degrade == "rotated_logo":
+        rot = np.array(Image.fromarray(logo).rotate(8, expand=True, resample=Image.BICUBIC))
+        logo = rot
+    if degrade == "cropped_logo":
+        lx = w - int(lw * 0.7)
+    lh = lw if kind != "distorted" else int(lw * 0.6)
+    img = S.place(base, logo, lx, ly, lw if degrade != "rotated_logo" else int(lw * 1.1), lh if degrade != "rotated_logo" else None) if degrade != "cropped_logo" else None
+    if degrade == "cropped_logo":
+        canvas = np.array(Image.new("RGB", (w + int(lw * 0.3), h), S.CREAM)); canvas[:, :w] = base
+        img = S.place(canvas, logo, lx, ly, lw, lh)[:, :w]
+    if degrade == "heavy_jpeg":
+        img = S.noise(S.jpeg(img, 25), 7, seed)
+    if degrade == "blur":
+        img = np.array(Image.fromarray(img).filter(ImageFilter.GaussianBlur(2.2)))
+    expected = {"compliant": [], "recoloured": ["v_logo_colour"], "retired": ["v_logo_retired"], "distorted": ["v_logo_distorted"]}[kind]
+    return img, expected, (None if kind == "compliant" else {"x": lx, "y": ly, "w": min(lw, w - lx), "h": lh})
+
+
+def build_stress(seed0: int = 9000):
+    folder = OUT / "stress"
+    folder.mkdir(parents=True, exist_ok=True)
+    labels, n = [], 0
+    for degrade in STRESS_DEGRADE:
+        for kind in STRESS_KINDS:
+            img, expected, region = make_stress(kind, degrade, seed0 + n)
+            fn = f"stress_{n:02d}_{degrade}_{kind}.jpg"
+            Image.fromarray(img).save(folder / fn, "JPEG", quality=88)
+            labels.append({"file": f"stress/{fn}", "kind": kind, "degrade": degrade, "expected": expected, "region": region})
+            n += 1
+    (OUT / "stress.json").write_text(json.dumps(labels, indent=1))
+    print(f"stress: {n} images")
+
+
 if __name__ == "__main__":
     (OUT / "assets").mkdir(parents=True, exist_ok=True)
     Image.fromarray(LOGO).save(OUT / "assets" / "lumina_logo.png")
@@ -103,3 +154,4 @@ if __name__ == "__main__":
     (OUT / "assets" / "palette.json").write_text(json.dumps(S.PALETTE, indent=1))
     build("dev", 1000)
     build("heldout", 5000)
+    build_stress()
