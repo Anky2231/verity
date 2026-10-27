@@ -4,6 +4,7 @@ import { api, explain } from '../../lib/api';
 import { useSession } from '../../lib/session';
 import { STATUS_LABEL, TIPS } from '../../lib/labels';
 import { usePageTitle } from '../../lib/title';
+import ShareReport from '../../components/ShareReport';
 
 const Stat = ({ label, value, hint }) => (
   <div className="card" style={{ marginBottom: 0 }} title={hint}>
@@ -52,7 +53,7 @@ function Trend({ points }) {
 }
 
 export default function Dashboard() {
-  const { token, role, ready } = useSession();
+  const { token, role, ready, brand } = useSession();
   usePageTitle('Compliance dashboard');
   const [a, setA] = useState(null);
   const [error, setError] = useState('');
@@ -107,6 +108,7 @@ export default function Dashboard() {
                   </tr>))}</tbody>
               </table>)}
           </div>
+          {['manager', 'admin'].includes(role) && <><h2>Client report</h2><ShareReport token={token} brandName={brand?.name} /></>}
           <p className="muted">Looking for the record of every action? <a href="/audit">Open the audit trail</a>.</p>
         </>)}
     </div>
