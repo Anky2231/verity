@@ -65,8 +65,9 @@ More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · API reference: [doc
 | Agent | Does | How |
 |---|---|---|
 | ToneGuard | Voice and tone against the brand's tone rules | LLM with schema-validated structured output and up to 3 repair retries. The live demo runs a deterministic **basic mode** (see below) |
-| TermGuard | Banned and approved terminology | Deterministic glossary match |
+| TermGuard | Banned and approved terminology, and (Round 3) wording that belongs to another brand the user also works on | Deterministic glossary match with variants and allowed contexts. The other-brand check compares the text with the user's other brands' names, approved terms, claims and tone examples and reports them as agent `brand` ("other brand") |
 | ClaimGuard | Unsupported product claims | Finds claim-like sentences, then ranks them against the approved claims register (BM25, IDF-weighted coverage, typo-tolerant matching) and cites claim id, source document and page. A wrong number ("24 hours" vs the approved "48 hours") is flagged as a conflict even when the words match. "No supporting claim" is a distinct, explained outcome |
+| VisualGuard (Round 3) | Images: colours outside the palette, a retired logo, a stretched, squashed, recoloured or crowded approved logo | Classical image processing, no model and no cost: k-means in Lab colour space against the brand's palette, and template matching on edge maps (coarse search over sizes and stretches, then a precise match) for the logos. Findings carry a rectangle of the image |
 | MetaAgent | One clean result | Merges overlapping spans, ranks by severity and confidence, computes the 0–100 score, and tags low-confidence findings as suggestions |
 
 Reliability built in: span verification (the server checks `text[start:end] == quoted_text`, re-locates or drops mismatches), one agent failing never blocks the others, a result cache keyed by content + guideline version, rate limiting, and a labelled precomputed result for the sample content if the AI service is unreachable. Other content is never faked.
