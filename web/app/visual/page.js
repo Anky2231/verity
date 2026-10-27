@@ -13,6 +13,7 @@ const readBase64 = (file) => new Promise((resolve, reject) => {
   r.onerror = () => reject(new Error('read failed'));
   r.readAsDataURL(file);
 });
+const IMAGE_TYPES = /^image\/(png|jpeg|webp|gif)$/;
 const SEV_COLOUR = { low: '#0e7490', medium: '#b45309', high: '#b91c1c', critical: '#7f1d1d' };
 
 // One image, checked by VisualGuard: the picture with a numbered box on every problem, and the same list as text.
@@ -61,6 +62,7 @@ function VisualInner() {
     e.preventDefault();
     const f = file.current?.files?.[0];
     if (!f) { setError('Choose an image first.'); return; }
+    if (!IMAGE_TYPES.test(f.type)) { setError('Use a PNG, JPEG, WebP or GIF image.'); return; }   // checked before a review is created, so a wrong file leaves nothing behind
     setBusy(true); setError('');
     try {
       const made = await api('/reviews', { token, method: 'POST', body: JSON.stringify({ title: title.trim() || f.name, content_type: 'image' }) });
@@ -70,6 +72,7 @@ function VisualInner() {
   }
   async function replace(e) {
     const f = e.target.files?.[0]; if (!f || !review) return;
+    if (!IMAGE_TYPES.test(f.type)) { setError('Use a PNG, JPEG, WebP or GIF image.'); e.target.value = ''; return; }
     setBusy(true); setError('');
     try { await upload(f, review.id); await load(review.id); setActive(null); }
     catch (err) { setError(explain(err, 'Could not check that image.')); } finally { setBusy(false); e.target.value = ''; }
