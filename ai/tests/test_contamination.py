@@ -61,3 +61,14 @@ def test_overlapping_matches_report_once():
     f = run("Visit Lumina for coffee beans.")
     spans = [(x.span.start, x.span.end) for x in f]
     assert len(spans) == len(set(spans))
+
+
+def test_full_review_reports_brand_findings_and_they_lower_the_score():
+    import asyncio
+    from app import pipeline
+    text = "Our new tin holds the finest coffee beans."
+    with_other = asyncio.run(pipeline.review(text, NORTHWIND))
+    without = asyncio.run(pipeline.review(text, {k: v for k, v in NORTHWIND.items() if k != "other_brands"}))
+    agents = [f["agent"] for h in with_other["highlights"] for f in h["findings"]]
+    assert "brand" in agents
+    assert with_other["score"] < without["score"]
