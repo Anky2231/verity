@@ -121,3 +121,29 @@ test('notifications and who gets them are per brand', async () => {
   const mayaNorthwind = (await call('creator', 'northwind', 'GET', '/notifications')).body;
   assert.ok(!mayaNorthwind.items.some((n) => n.review_id === lReview.id), 'Maya manages Northwind but is not a Lumina manager');
 });
+
+test('each run tells the AI service about the user\'s other brands, and only those', async () => {
+  const seen = [];
+  const real = globalThis.fetch;
+  process.env.AI_SERVICE_URL = 'http://ai.test';
+  globalThis.fetch = (url, init) => {
+    if (!String(url).startsWith('http://ai.test')) return real(url, init);
+    const b = JSON.parse(init.body); seen.push({ own: b.big.brand_name, others: b.big.other_brands.map((o) => o.id), terms: b.big.other_brands.flatMap((o) => o.terms.map((t) => t.approved)) });
+    return Promise.resolve(new Response(JSON.stringify({ text: b.text, score: 90, agents: [], highlights: [], timing: {} }), { status: 200 }));
+  };
+  try {
+    const n = (await call('creator', 'northwind', 'POST', '/reviews', { title: 'Sibling check' })).body;
+    assert.equal((await call('creator', 'northwind', 'POST', `/reviews/${n.id}/run`, { text: 'Steep slowly.' })).status, 200);
+    const l = (await call('creator', 'lumina', 'POST', '/reviews', { title: 'Sibling check 2' })).body;
+    assert.equal((await call('creator', 'lumina', 'POST', `/reviews/${l.id}/run`, { text: 'Brew slowly.' })).status, 200);
+  } finally { globalThis.fetch = real; }
+  assert.equal(seen[0].own, 'Northwind Tea Co.'); assert.deepEqual(seen[0].others, ['lumina']); assert.ok(seen[0].terms.includes('coffee beans'));
+  assert.equal(seen[1].own, 'Lumina Coffee Co.'); assert.deepEqual(seen[1].others, ['northwind']); assert.ok(seen[1].terms.includes('tea leaves'));
+});
+
+test('a user in one brand only is not sent any other brand', async () => {
+  await db.query(`INSERT INTO users (id, org_id, name, email, role) VALUES ('u_solo','org_demo','Solo','solo@demo','creator') ON CONFLICT DO NOTHING`);
+  await db.query(`INSERT INTO brand_memberships (user_id, brand_id, role) VALUES ('u_solo','northwind','creator') ON CONFLICT DO NOTHING`);
+  const { siblingBrands } = await import('../src/brand.js');
+  assert.deepEqual(await siblingBrands(db, 'u_solo', 'northwind'), []);
+});
