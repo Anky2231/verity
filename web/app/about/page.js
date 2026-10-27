@@ -53,10 +53,32 @@ const DEVIATIONS = [
   ['Claude 3.5 Sonnet', 'Model-agnostic ToneGuard; basic mode live', 'The live demo runs rule-based tone checks so it costs nothing and cannot hit rate limits. The LLM path is built and switches on with two environment variables.'],
 ];
 
+const ROUND3 = [
+  ['VisualGuard: image and logo compliance', 'Done',
+    'Creators and managers upload an image; VisualGuard marks every problem with a numbered box and the guideline clause: colours outside the brand palette, a retired logo, an approved logo that is stretched, squashed, recoloured or crowded. Managers keep each brand\u2019s logos, retired logos and palette on the Brand page. Findings use the same format, scoring, decisions, approval and audit trail as text. It uses classical image processing, not CLIP (too heavy and costly for the free host).',
+    'Target 85% recall, 10% false flags. Held-out: 22 of 22 violations found, 0 of 8 compliant images flagged. Harder stress set: 9 of 15; rotated or cropped logos are missed and photographic backgrounds are reported as off-palette. The images are synthetic, so real designs will score lower.',
+    'ai/app/visual/ · ai/scripts/visual_eval.py · ai/eval/visual/ · api/src/routes/assets.js · web/app/visual/page.js'],
+  ['Multi-brand workspaces (agency mode)', 'Done',
+    'One person can belong to several brands with a different role in each; a switcher in the header changes guidelines, reviews, audit, dashboard and notifications together. Wording from the user\u2019s other brands is flagged as \u201cother brand\u201d. Managers can create read-only, expiring, revocable client report links that show scores and statuses and never content, comments or names.',
+    'Target: no cross-brand access, at least 80% of planted cross-brand wording flagged. Result: every review route returns 404 from the other brand (the test fails if the filter is removed); 18 of 21 planted samples flagged (86%) with 0 of 18 clean texts flagged. Misses: wording with no listed term, claim or name.',
+    'api/src/brand.js · api/test/multibrand.test.js · api/src/routes/share.js · ai/app/agents/contamination.py'],
+  ['Brand Drift Intelligence', 'Done',
+    'Per team, violations per 100 words over the last 3 weeks are compared with the team\u2019s own first 4 weeks. A team is drifting when the rise is both clearly beyond chance and at least 1.3 times the baseline. The Drift page shows teams, the clauses most likely to be broken next, trend charts with tables, and a weekly digest with an alert to managers. Teams are set on each person\u2019s brand membership.',
+    'Target: alert within one window of the drift starting, none on a stable team. Held-out simulation (500 runs): 4.6% of stable teams alerted; a 2.2 times step was caught within 3 weeks in 92% (median delay 1 week), a 4-week ramp in 71%, a mild 1.6 times step in 45%. The seeded Social drift is found and the other three teams stay stable. Simulated and seeded data only; the digest is created on first view each week (no scheduler on free hosting).',
+    'api/src/drift.js · api/scripts/drift-eval.js · api/test/drift.test.js · web/app/drift/page.js'],
+];
+
+const FIXES = [
+  ['ClaimGuard false positives', '\u201cLimited time only\u201d is no longer a claim, \u201cthe only roaster\u201d still is; \u201cbest-in-class\u201d is left to ToneGuard, \u201cthe best coffee\u201d still is a claim. Dev precision 0.90 to 1.00; held-out 0.75 to 0.86 (those two held-out errors were known when the rule was written).'],
+  ['Upload size limit', 'The API rejected request bodies over 2 MB although guideline files of up to 5 MB are documented. Upload routes now accept the sizes they document.'],
+  ['Large review lists', 'The queue loaded every review at once. It now loads 25 at a time, searches titles, and keeps loaded pages after an action.'],
+  ['No way to share a result', 'Managers can send a client a read-only report link.'],
+];
+
 export default function About() {
   return (
     <div className="doc">
-      <p className="muted" style={{ margin: 0 }}><a href="/">← Home</a> · <a href="/roadmap">Round 3 roadmap</a></p>
+      <p className="muted" style={{ margin: 0 }}><a href="/">← Home</a> · <a href="/roadmap">Round 3</a></p>
       <h1 style={{ marginBottom: 4 }}>What changed since Round 1</h1>
       <p className="muted" style={{ marginTop: 0 }}>Each Round 1 promise, what shipped, and where we simplified or are not done yet.</p>
 
@@ -72,12 +94,24 @@ export default function About() {
         <tbody>{NAMED.map(([a, s, d, e]) => <tr key={a}><td><b>{a}</b></td><td><Status s={s} /></td><td>{d}</td><td className="muted">{e}</td></tr>)}</tbody>
       </table></div>
 
+      <h2>Round 3: the three promised improvements</h2>
+      <div className="scroll"><table>
+        <thead><tr><th>Improvement</th><th>Status</th><th>What shipped</th><th>Measured against the target</th><th>Evidence</th></tr></thead>
+        <tbody>{ROUND3.map(([a, st, d, m, e]) => <tr key={a}><td><b>{a}</b></td><td><Status s={st} /></td><td>{d}</td><td>{m}</td><td className="muted">{e}</td></tr>)}</tbody>
+      </table></div>
+
+      <h2>Round 2 gaps fixed in Round 3</h2>
+      <div className="scroll"><table>
+        <thead><tr><th>Gap</th><th>What changed</th></tr></thead>
+        <tbody>{FIXES.map(([a, b]) => <tr key={a}><td><b>{a}</b></td><td>{b}</td></tr>)}</tbody>
+      </table></div>
+
       <h2>Deviations from the Round 1 stack, and why</h2>
       <div className="scroll"><table>
         <thead><tr><th>Round 1</th><th>Round 2</th><th>Why</th></tr></thead>
         <tbody>{DEVIATIONS.map(([a, b, c]) => <tr key={a}><td><b>{a}</b></td><td>{b}</td><td>{c}</td></tr>)}</tbody>
       </table></div>
-      <p className="muted">Round 1 locked the feature set after submission. No new product features were added; the changes above are infrastructure simplifications. VisualGuard, AccessGuard, multi-brand and drift analytics are not built; see the <a href="/roadmap">Round 3 roadmap</a>.</p>
+      <p className="muted">Round 1 locked the feature set after submission, and the three Round 3 improvements are the ones promised in Round 2. What is still limited (ToneGuard in basic mode, no usability test with outside people, shared demo data, seeded teams and drift history) is listed on the <a href="/roadmap">Round 3 page</a> and in the README.</p>
     </div>
   );
 }
