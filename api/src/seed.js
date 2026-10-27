@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { DEMO_USERS } from './users.js';
 
 const BIG = JSON.parse(fs.readFileSync(new URL('../seed/lumina_big.json', import.meta.url), 'utf8'));
+const NORTHWIND_BIG = JSON.parse(fs.readFileSync(new URL('../seed/northwind_big.json', import.meta.url), 'utf8'));
 
 // Idempotent: safe to run on every boot.
 export async function seed(db) {
@@ -18,4 +19,11 @@ export async function seed(db) {
     await db.query(`INSERT INTO brand_memberships (user_id, brand_id, role) VALUES ($1,'lumina',$2) ON CONFLICT DO NOTHING`, [u.id, u.role]);
   await db.query(`INSERT INTO big_versions (brand_id, version, data, created_by) VALUES ('lumina', 1, $1, 'u_rajan') ON CONFLICT DO NOTHING`,
     [JSON.stringify(BIG)]);
+  // Northwind Tea Co.: a second brand with its own guidelines. Roles differ per brand on purpose:
+  // Maya is a creator at Lumina but a manager at Northwind, Rajan the other way round.
+  await db.query(`INSERT INTO big_versions (brand_id, version, data, created_by) VALUES ('northwind', 1, $1, 'u_rajan') ON CONFLICT DO NOTHING`,
+    [JSON.stringify(NORTHWIND_BIG)]);
+  const northwind = { u_rajan: 'creator', u_maya: 'manager', u_anita: 'approver', u_admin: 'admin' };
+  for (const [userId, role] of Object.entries(northwind))
+    await db.query(`INSERT INTO brand_memberships (user_id, brand_id, role) VALUES ($1,'northwind',$2) ON CONFLICT DO NOTHING`, [userId, role]);
 }
