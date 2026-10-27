@@ -36,6 +36,7 @@ export default function Walkthrough() {
     } catch { router.push('/'); } finally { setBusy(false); }
   }
 
+  if (path === '/report') return null;   // a client reading a shared report should not see the judge tour
   const done = STEPS.filter((s) => p[s.key]).length;
   const next = STEPS.findIndex((s) => !p[s.key]);
   const bar = { position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50, background: 'var(--card)', borderTop: '1px solid var(--line)', boxShadow: '0 -2px 8px rgba(0,0,0,.08)' };
