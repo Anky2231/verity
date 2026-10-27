@@ -63,7 +63,7 @@ export default function BrandAssets({ token, canEdit }) {
 
   return (
     <section className="card" aria-labelledby="assets-h">
-      <b id="assets-h">Brand assets for VisualGuard</b>
+      <h2 id="assets-h" style={{ fontSize: 16, margin: 0 }}>Brand assets for VisualGuard</h2>
       <p className="muted" style={{ margin: '4px 0 10px' }}>
         Images are checked against these. VisualGuard flags colours that are not in the palette, a retired logo, and an approved logo that is stretched,
         recoloured or crowded. Use PNG logos with a transparent background.
