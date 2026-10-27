@@ -7,29 +7,53 @@ import { usePageTitle } from '../../lib/title';
 import { ACTION_LABEL, STATUS_LABEL, TIPS, ago } from '../../lib/labels';
 import ReasonDialog from '../../components/ReasonDialog';
 
+const PAGE = 25;
 const STATUSES = ['', 'draft', 'submitted', 'escalated', 'changes_requested', 'approved', 'published'];
 
 export default function Queue() {
   const { token, user, role, ready } = useSession();
   const [rows, setRows] = useState(null);
+  const [more, setMore] = useState(null);          // cursor for the next page, or null when everything is shown
   const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState('');          // the search text the list was last loaded for (typing is debounced)
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [reasonRequest, setReasonRequest] = useState(null);
   const staff = role && role !== 'creator';
   usePageTitle(role === 'creator' ? 'My reviews' : 'Review queue');
 
-  const refresh = useCallback(async () => {
-    try { setRows(await api(`/reviews${status ? `?status=${status}` : ''}`, { token })); setError(''); }
-    catch (e) { setError(explain(e, 'Could not load the queue.')); }
-  }, [token, status]);
-  useEffect(() => { if (token) refresh(); }, [token, refresh]);
+  useEffect(() => { const t = setTimeout(() => setQuery(search.trim()), 300); return () => clearTimeout(t); }, [search]);
+
+  const path = useCallback((limit, cursor) => {
+    const q = new URLSearchParams({ limit: String(limit) });
+    if (status) q.set('status', status);
+    if (query) q.set('q', query);
+    if (cursor) q.set('cursor', cursor);
+    return `/reviews?${q}`;
+  }, [status, query]);
+
+  // Loads the list again. After an action it asks for as many rows as are already on screen, so loaded pages do not vanish.
+  const refresh = useCallback(async (keep = 0) => {
+    try {
+      const page = await api(path(Math.min(200, Math.max(PAGE, keep))), { token });
+      setRows(page.items); setMore(page.next_cursor); setError('');
+    } catch (e) { setError(explain(e, 'Could not load the queue.')); }
+  }, [token, path]);
+  useEffect(() => { if (token) { setRows(null); refresh(); } }, [token, refresh]);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try { const page = await api(path(PAGE, more), { token }); setRows((r) => [...r, ...page.items]); setMore(page.next_cursor); }
+    catch (e) { setError(explain(e, 'Could not load more reviews.')); } finally { setLoadingMore(false); }
+  }
 
   // Actions that need a reason open the dialog; it closes either way and a failure shows in the error banner.
   function act(id, a) {
     const run = async (reason) => {
       await api(`/reviews/${id}/transition`, { token, method: 'POST', body: JSON.stringify({ action: a.action, reason }) });
       if (['approve', 'escalate', 'reject'].includes(a.action)) markProgress('approve');
-      await refresh();
+      await refresh(rows?.length);
     };
     if (a.reason) {
       setReasonRequest({
@@ -52,18 +76,19 @@ export default function Queue() {
         <div style={{ display: 'flex', gap: 8 }}>
           {role !== 'approver' && <a href="/review" className="btn primary">+ New review</a>}
           {role !== 'approver' && <a href="/visual" className="btn">+ New image review</a>}
+ <input type="search" aria-label="Search titles" placeholder="Search titles" value={search} onChange={(e) => setSearch(e.target.value)} maxLength={100} style={{ padding: 6 }} />
           <select aria-label="Status filter" value={status} onChange={(e) => setStatus(e.target.value)}>
             {STATUSES.map((s) => <option key={s} value={s}>{s ? STATUS_LABEL[s] : 'All statuses'}</option>)}
           </select>
         </div>
       </div>
       <p className="muted">Signed in as <b>{user?.name}</b> ({role}). {role === 'approver' ? 'Filter to “Escalated” to see what needs your sign-off.' : role === 'manager' ? 'Filter to “Submitted” to see what needs your decision.' : ''}</p>
-      {error && <div className="toast" role="alert"><span>{error}</span><button onClick={refresh}>Retry</button></div>}
+      {error && <div className="toast" role="alert"><span>{error}</span><button onClick={() => refresh(rows?.length)}>Retry</button></div>}
 
       <div className="card" style={{ overflowX: 'auto' }}>
         {rows === null ? <><div className="skeleton" /><div className="skeleton" /><div className="skeleton" style={{ width: '70%' }} /></> :
           rows.length === 0 ? (
-            <p className="muted">{status ? 'Nothing with that status.' : 'No reviews yet.'} {role !== 'approver' && <a href="/review">Start a review and load the sample content →</a>}</p>
+            <p className="muted">{query ? `Nothing matches “${query}”.` : status ? 'Nothing with that status.' : 'No reviews yet.'} {role !== 'approver' && <a href="/review">Start a review and load the sample content →</a>}</p>
           ) : (
             <table>
               <thead><tr><th>Title</th><th>Creator</th><th>Status</th><th title={TIPS.score}>Score</th><th>Open flags</th><th title={TIPS.delta}>Δ</th><th>Age</th><th>Actions</th></tr></thead>
@@ -82,6 +107,11 @@ export default function Queue() {
                 </tr>))}</tbody>
             </table>)}
       </div>
+      {rows && rows.length > 0 && (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '8px 0' }}>
+          <span className="muted" role="status">Showing {rows.length}{more ? ' (more available)' : ''}</span>
+          {more && <button onClick={loadMore} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Load more'}</button>}
+        </div>)}
       {staff && <p className="muted">Compliance numbers are on the <a href="/dashboard">dashboard</a>.</p>}
       <ReasonDialog
         open={Boolean(reasonRequest)}
