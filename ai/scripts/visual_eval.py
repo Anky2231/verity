@@ -80,5 +80,5 @@ def evaluate(split: str, verbose: bool = True):
 
 if __name__ == "__main__":
     which = sys.argv[1] if len(sys.argv) > 1 else "both"
-    for s in (["dev", "heldout"] if which == "both" else [which]):
+    for s in (["dev", "heldout"] if which == "both" else [which]):   # "stress" is run by name; it shows limits and is never tuned on
         evaluate(s)
