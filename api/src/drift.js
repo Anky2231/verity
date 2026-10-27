@@ -2,13 +2,15 @@
 //
 // Signal: violations per 100 words, per team and week (pooled over the week's reviews, so long and short posts weigh by
 // length). A team's baseline is its own first BASELINE_WEEKS weeks. The recent window is the last WINDOW_WEEKS weeks up
-// to the latest week with activity. The drift score is how many standard errors the recent rate sits above the baseline;
+// to the latest week with activity. The drift score is how many standard errors the recent rate sits above the baseline.
+// Violations are counts, so the standard error comes from the Poisson model (sqrt(100 x baseline / words)), widened by a
+// dispersion factor measured on the baseline weeks (real writers vary more than pure chance) and never below 1;
 // a team is "drifting" only if the score passes THRESHOLD *and* the rate is at least MIN_RATIO times the baseline, so a
 // statistically visible but trivial change does not raise an alert. Everything here is plain arithmetic on the stored
 // reviews: no model, no cost, and every number can be recomputed by hand.
 export const BASELINE_WEEKS = 4;
 export const WINDOW_WEEKS = 3;
-export const THRESHOLD = 3.0;
+export const THRESHOLD = 3.5;
 export const MIN_RATIO = 1.3;
 export const MIN_BASELINE_REVIEWS = 6;
 export const MIN_WINDOW_REVIEWS = 3;
@@ -36,27 +38,31 @@ export function weeklySeries(reviews, until = null) {
 
 const pooled = (points) => {
   const words = points.reduce((n, p) => n + p.words, 0), flags = points.reduce((n, p) => n + p.flags, 0);
-  return { reviews: points.reduce((n, p) => n + p.reviews, 0), rate: words ? (flags / words) * 100 : null };
+  return { reviews: points.reduce((n, p) => n + p.reviews, 0), words, rate: words ? (flags / words) * 100 : null };
 };
+
+const PRIOR_WEIGHT = 4;   // dispersion is estimated from only a few weeks, so it is pulled towards 1 as if by this many extra weeks
 
 // A team's own reference period: its first BASELINE_WEEKS calendar weeks.
 export function baselineOf(series) {
-  const points = series.slice(0, BASELINE_WEEKS), withData = points.filter((p) => p.rate != null);
-  const { reviews, rate } = pooled(points);
-  if (reviews < MIN_BASELINE_REVIEWS || withData.length < 3) return null;
-  const mean = rate, rates = withData.map((p) => p.rate);
-  const m = rates.reduce((a, b) => a + b, 0) / rates.length;
-  const sd = Math.sqrt(rates.reduce((a, b) => a + (b - m) ** 2, 0) / Math.max(1, rates.length - 1));
-  return { mean, sd: Math.max(sd, 0.25 * mean, 0.4), reviews, weeks: points.length };   // a floor stops a quiet baseline from making every wobble look huge
+  const points = series.slice(0, BASELINE_WEEKS), withData = points.filter((p) => p.rate != null && p.words > 0);
+  const { reviews, rate: mean } = pooled(points);
+  if (reviews < MIN_BASELINE_REVIEWS || withData.length < 3 || !(mean > 0)) return null;
+  // Pearson dispersion: how much more the weekly rates scatter than counts of rare events would by chance.
+  const chi = withData.reduce((n, p) => n + ((p.rate - mean) ** 2 * p.words) / (100 * mean), 0);
+  const df = withData.length - 1;
+  const dispersion = Math.max(1, (chi + PRIOR_WEIGHT) / (df + PRIOR_WEIGHT));
+  return { mean, dispersion, reviews, weeks: points.length };
 }
 
 // Score the window of WINDOW_WEEKS weeks ending at series index `end`.
 export function scoreWindow(series, base, end) {
   const window = series.slice(Math.max(0, end - WINDOW_WEEKS + 1), end + 1);
-  const { reviews, rate } = pooled(window);
+  const { reviews, words, rate } = pooled(window);
   if (!base || reviews < MIN_WINDOW_REVIEWS || rate == null) return null;
-  const z = (rate - base.mean) / (base.sd / Math.sqrt(WINDOW_WEEKS));
-  const ratio = base.mean > 0 ? rate / base.mean : (rate > 0 ? Infinity : 1);
+  const se = Math.sqrt((base.dispersion * 100 * base.mean) / words);
+  const z = (rate - base.mean) / se;
+  const ratio = rate / base.mean;
   return { rate, z, ratio, reviews, drifting: z >= THRESHOLD && ratio >= MIN_RATIO };
 }
 
@@ -103,7 +109,7 @@ export function buildDrift(reviews) {
       team, status, reviews: mine.length,
       baseline: base && { rate: round(base.mean), reviews: base.reviews, weeks: base.weeks },
       recent: score && { rate: round(score.rate), reviews: score.reviews, weeks: WINDOW_WEEKS },
-      score: score && round(score.z, 1), ratio: score && Number.isFinite(score.ratio) ? round(score.ratio) : null,
+      score: score && round(score.z, 1), ratio: score && round(score.ratio),
       series: padded.map((p) => ({ week: p.week, reviews: p.reviews, rate: round(p.rate) })),
       rising_clauses: status === 'drifting' ? risingClauses(mine, padded) : [],
     };
