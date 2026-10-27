@@ -110,6 +110,7 @@ paths:
       x-roles: [creator, manager, approver, admin]
       parameters:
         - { name: status, in: query, schema: { $ref: '#/components/schemas/ReviewStatus' } }
+        - { name: q, in: query, description: 'Search in titles, ignoring case (at most 100 characters)', schema: { type: string, maxLength: 100 } }
         - { name: limit, in: query, description: 'Page size, from 1 to 200', schema: { type: integer, minimum: 1, maximum: 200 } }
         - { name: cursor, in: query, description: The `next_cursor` of the previous page; needs `limit`, schema: { type: string } }
       responses:
