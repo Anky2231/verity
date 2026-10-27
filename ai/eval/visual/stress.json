@@ -1,0 +1,247 @@
+[
+ {
+  "file": "stress/stress_00_heavy_jpeg_compliant.jpg",
+  "kind": "compliant",
+  "degrade": "heavy_jpeg",
+  "expected": [],
+  "region": null
+ },
+ {
+  "file": "stress/stress_01_heavy_jpeg_recoloured.jpg",
+  "kind": "recoloured",
+  "degrade": "heavy_jpeg",
+  "expected": [
+   "v_logo_colour"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 130
+  }
+ },
+ {
+  "file": "stress/stress_02_heavy_jpeg_retired.jpg",
+  "kind": "retired",
+  "degrade": "heavy_jpeg",
+  "expected": [
+   "v_logo_retired"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 130
+  }
+ },
+ {
+  "file": "stress/stress_03_heavy_jpeg_distorted.jpg",
+  "kind": "distorted",
+  "degrade": "heavy_jpeg",
+  "expected": [
+   "v_logo_distorted"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 78
+  }
+ },
+ {
+  "file": "stress/stress_04_blur_compliant.jpg",
+  "kind": "compliant",
+  "degrade": "blur",
+  "expected": [],
+  "region": null
+ },
+ {
+  "file": "stress/stress_05_blur_recoloured.jpg",
+  "kind": "recoloured",
+  "degrade": "blur",
+  "expected": [
+   "v_logo_colour"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 130
+  }
+ },
+ {
+  "file": "stress/stress_06_blur_retired.jpg",
+  "kind": "retired",
+  "degrade": "blur",
+  "expected": [
+   "v_logo_retired"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 130
+  }
+ },
+ {
+  "file": "stress/stress_07_blur_distorted.jpg",
+  "kind": "distorted",
+  "degrade": "blur",
+  "expected": [
+   "v_logo_distorted"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 78
+  }
+ },
+ {
+  "file": "stress/stress_08_rotated_logo_compliant.jpg",
+  "kind": "compliant",
+  "degrade": "rotated_logo",
+  "expected": [],
+  "region": null
+ },
+ {
+  "file": "stress/stress_09_rotated_logo_recoloured.jpg",
+  "kind": "recoloured",
+  "degrade": "rotated_logo",
+  "expected": [
+   "v_logo_colour"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 130
+  }
+ },
+ {
+  "file": "stress/stress_10_rotated_logo_retired.jpg",
+  "kind": "retired",
+  "degrade": "rotated_logo",
+  "expected": [
+   "v_logo_retired"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 130
+  }
+ },
+ {
+  "file": "stress/stress_11_rotated_logo_distorted.jpg",
+  "kind": "distorted",
+  "degrade": "rotated_logo",
+  "expected": [
+   "v_logo_distorted"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 78
+  }
+ },
+ {
+  "file": "stress/stress_12_photo_background_compliant.jpg",
+  "kind": "compliant",
+  "degrade": "photo_background",
+  "expected": [],
+  "region": null
+ },
+ {
+  "file": "stress/stress_13_photo_background_recoloured.jpg",
+  "kind": "recoloured",
+  "degrade": "photo_background",
+  "expected": [
+   "v_logo_colour"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 130
+  }
+ },
+ {
+  "file": "stress/stress_14_photo_background_retired.jpg",
+  "kind": "retired",
+  "degrade": "photo_background",
+  "expected": [
+   "v_logo_retired"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 130
+  }
+ },
+ {
+  "file": "stress/stress_15_photo_background_distorted.jpg",
+  "kind": "distorted",
+  "degrade": "photo_background",
+  "expected": [
+   "v_logo_distorted"
+  ],
+  "region": {
+   "x": 518,
+   "y": 50,
+   "w": 130,
+   "h": 78
+  }
+ },
+ {
+  "file": "stress/stress_16_cropped_logo_compliant.jpg",
+  "kind": "compliant",
+  "degrade": "cropped_logo",
+  "expected": [],
+  "region": null
+ },
+ {
+  "file": "stress/stress_17_cropped_logo_recoloured.jpg",
+  "kind": "recoloured",
+  "degrade": "cropped_logo",
+  "expected": [
+   "v_logo_colour"
+  ],
+  "region": {
+   "x": 629,
+   "y": 50,
+   "w": 91,
+   "h": 130
+  }
+ },
+ {
+  "file": "stress/stress_18_cropped_logo_retired.jpg",
+  "kind": "retired",
+  "degrade": "cropped_logo",
+  "expected": [
+   "v_logo_retired"
+  ],
+  "region": {
+   "x": 629,
+   "y": 50,
+   "w": 91,
+   "h": 130
+  }
+ },
+ {
+  "file": "stress/stress_19_cropped_logo_distorted.jpg",
+  "kind": "distorted",
+  "degrade": "cropped_logo",
+  "expected": [
+   "v_logo_distorted"
+  ],
+  "region": {
+   "x": 629,
+   "y": 50,
+   "w": 91,
+   "h": 78
+  }
+ }
+]
