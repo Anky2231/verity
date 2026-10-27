@@ -24,11 +24,13 @@ export default function DriftChart({ team, series, baseline, windowWeeks, drifti
       </svg>
       <details style={{ marginTop: 6 }}>
         <summary className="muted">View the same data as a table</summary>
+        <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', maxWidth: 420 }}>
           <caption className="sr-only">{team}: violations per 100 words by week</caption>
           <thead><tr><th scope="col">Week starting</th><th scope="col">Violations per 100 words</th><th scope="col">Reviews</th></tr></thead>
           <tbody>{series.map((p) => <tr key={p.week}><td>{p.week}</td><td>{p.rate ?? '—'}</td><td>{p.reviews}</td></tr>)}</tbody>
         </table>
+        </div>
       </details>
     </>
   );
