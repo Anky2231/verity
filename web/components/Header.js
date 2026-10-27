@@ -7,9 +7,9 @@ import { ago } from '../lib/labels';
 
 const NAV = {
   creator: [['/queue', 'My reviews'], ['/review', 'New review']],
-  manager: [['/queue', 'Queue'], ['/brand', 'Brand'], ['/dashboard', 'Dashboard'], ['/audit', 'Audit']],
-  approver: [['/queue', 'Queue'], ['/dashboard', 'Dashboard'], ['/audit', 'Audit']],
-  admin: [['/queue', 'Queue'], ['/brand', 'Brand'], ['/dashboard', 'Dashboard'], ['/audit', 'Audit']],
+  manager: [['/queue', 'Queue'], ['/brand', 'Brand'], ['/dashboard', 'Dashboard'], ['/drift', 'Drift'], ['/audit', 'Audit']],
+  approver: [['/queue', 'Queue'], ['/dashboard', 'Dashboard'], ['/drift', 'Drift'], ['/audit', 'Audit']],
+  admin: [['/queue', 'Queue'], ['/brand', 'Brand'], ['/dashboard', 'Dashboard'], ['/drift', 'Drift'], ['/audit', 'Audit']],
 };
 const ROLES = [['creator', 'Maya', 'Creator'], ['manager', 'Rajan', 'Manager'], ['approver', 'Anita', 'Approver']];
 
