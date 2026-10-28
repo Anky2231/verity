@@ -22,6 +22,7 @@ Works on desktop and phone widths. **Live:** https://verity-two-delta.vercel.app
 | Managers and approvers | Dashboard (score trend, violations by agent / content type / creator, clauses reviewers keep overriding) and the audit trail (verify the hash chain, export CSV/JSON) |
 | Anyone with several brands (Round 3) | Switch brand in the header: guidelines, reviews, audit trail, dashboard and notifications change with it, and so can the person's role (Maya is a creator at Lumina and a manager at Northwind). Wording from the *other* brand is flagged "other brand" |
 | Creators and managers (Round 3) | **New image review**: upload a banner or graphic; VisualGuard marks problems with numbered boxes (colours outside the palette, a retired logo, a stretched, recoloured or crowded logo). Same decisions, approval and audit as text |
+| Everyone | **Light, dark or system theme** from the button in the header; the choice is remembered in the browser and applied before the page is drawn |
 | Managers (Round 3) | **Brand assets** on the Brand page (logos, retired logos, palette); **Drift** page (which teams are slowly moving away from the guidelines, with a weekly digest and an alert); **client report** link from the dashboard (read-only, expiring, revocable) |
 
 Seeded so nothing opens empty: two brands (Lumina Coffee Co. and Northwind Tea Co.) with their own guidelines, logos and palettes, about 140 historical reviews from four teams (ten weeks, with a planted drift in one), notifications, and a prompt-injection test sample.
@@ -114,6 +115,7 @@ cd web && npm run multibrand  # one person, two brands: roles, data, other-brand
 cd web && npm run drift       # drift page on the seeded history: the planted drift, the digest, the alert, accessibility
 cd web && npm run visual      # image reviews against the real AI service, brand assets, per-brand checking (needs the AI service)
 cd web && npm run keyboard3   # keyboard-only: image review boxes and dispute dialog, drift chart tables
+cd web && npm run theme       # light / dark / system toggle: override, memory, no flash, accessibility
 cd web && npm run queue       # paged and searchable queue
 cd ai  && .venv/bin/python scripts/eval.py  # precision / recall on the dev and held-out text sets (30 texts each)
 cd ai  && .venv/bin/python scripts/calibrate.py  # stated confidence vs measured precision
