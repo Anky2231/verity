@@ -275,7 +275,7 @@ export default function PerspectiveTunnelHero({
 
       {/* Headline and the real controls, above the corridor so they are always readable and clickable. */}
       <motion.div
-        style={flat ? undefined : { scale: titleScale, opacity: titleOpacity }}
+        style={flat ? { scale: 1, opacity: 1 } : { scale: titleScale, opacity: titleOpacity }}   /* flat: explicitly full strength, or Framer keeps the corridor's last faded value */
         className="relative z-40 flex max-w-2xl flex-col items-center px-4 text-center"
       >
         <div className="rounded-3xl bg-neutral-50/85 px-4 py-6 backdrop-blur-sm dark:bg-neutral-950/80 sm:px-8">
