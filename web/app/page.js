@@ -4,18 +4,11 @@ import { useRouter } from 'next/navigation';
 import { API } from '../lib/api';
 import { loginAs } from '../lib/session';
 import { SLOW_MS, pollUntilUp } from '../lib/wake';
-import HalftoneWordmarkFooter from '../components/ui/halftone-wordmark-footer';
 
 const ROLES = [
   { role: 'creator', label: 'Creator', name: 'Maya', desc: 'Write content, fix flags, submit.' },
   { role: 'manager', label: 'Manager', name: 'Rajan', desc: 'Upload guidelines, approve or reject.' },
   { role: 'approver', label: 'Approver', name: 'Anita', desc: 'Final sign-off on escalations.' },
-];
-// The footer's link columns: the real pages of the product, then the project's own pages.
-const FOOTER_COLUMNS = [
-  { title: 'Product', links: [{ label: 'Review queue', href: '/queue' }, { label: 'Brand guidelines', href: '/brand' }, { label: 'Image reviews', href: '/visual' }] },
-  { title: 'Insight', links: [{ label: 'Dashboard', href: '/dashboard' }, { label: 'Brand drift', href: '/drift' }, { label: 'Audit trail', href: '/audit' }] },
-  { title: 'Project', links: [{ label: 'What changed', href: '/about' }, { label: 'Round 3 results', href: '/roadmap' }, { label: 'Source code', href: 'https://github.com/Swas00/verity' }] },
 ];
 const NOT_ANSWERING = 'The server is not answering. It may still be starting; please try again in a minute.';
 
@@ -67,7 +60,6 @@ export default function Home() {
   }
 
   return (
-    <>
     <div style={{ maxWidth: 680, margin: '56px auto', padding: '0 16px', textAlign: 'center' }}>
       <h1 style={{ fontSize: 38, marginBottom: 4 }}>Verity</h1>
       <p className="muted" style={{ marginTop: 0, fontSize: 16 }}>Every word. Every pixel. On brand.</p>
@@ -112,13 +104,5 @@ export default function Home() {
         {' '}AI service {health ? <span className={`badge ${health.ai === 'up' ? 'green' : 'red'}`}>{health.ai}</span> : '…'}
       </p>
     </div>
-    <HalftoneWordmarkFooter
-      wordmark="verity"
-      label="Verity · Brand governance"
-      meta="©2026 · Team Merge Conflicts · Inkloom AI Hackathon"
-      columns={FOOTER_COLUMNS}
-      preset="cobalt"
-    />
-    </>
   );
 }
