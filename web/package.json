@@ -16,8 +16,7 @@
     "drift": "node e2e/drift.mjs",
     "visual": "node e2e/visual.mjs",
     "queue": "node e2e/queue.mjs",
-    "keyboard3": "node e2e/keyboard3.mjs",
-    "landing": "node e2e/landing.mjs"
+    "keyboard3": "node e2e/keyboard3.mjs"
   },
   "dependencies": {
     "@tiptap/core": "^2.27.3",
