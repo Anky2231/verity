@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { API } from '../lib/api';
 import { loginAs } from '../lib/session';
 import { SLOW_MS, pollUntilUp } from '../lib/wake';
+import PerspectiveTunnelHero from '../components/ui/perspective-tunnel-hero';
+import { LANDING_ITEMS } from '../lib/landing-items';
 
 const ROLES = [
   { role: 'creator', label: 'Creator', name: 'Maya', desc: 'Write content, fix flags, submit.' },
@@ -60,49 +62,53 @@ export default function Home() {
   }
 
   return (
-    <div style={{ maxWidth: 680, margin: '56px auto', padding: '0 16px', textAlign: 'center' }}>
-      <h1 style={{ fontSize: 38, marginBottom: 4 }}>Verity</h1>
-      <p className="muted" style={{ marginTop: 0, fontSize: 16 }}>Every word. Every pixel. On brand.</p>
-      <p style={{ maxWidth: 480, margin: '16px auto', lineHeight: 1.6 }}>
-        AI agents check content against your brand guidelines and explain every flag. People make the final call, and every decision is recorded.
-      </p>
+    <>
+      <PerspectiveTunnelHero
+        items={LANDING_ITEMS}
+        eyebrow="Verity · Brand governance"
+        title={<>Every word.<br />Every pixel.<br />On brand.</>}
+        description="AI agents check content against your brand guidelines and explain every flag. People make the final call, and every decision is recorded."
+        scrollHint="Scroll to see what Verity checks"
+      >
+        {waking && (
+          <div role="status" className="card" style={{ textAlign: 'left', borderColor: 'var(--accent)' }}>
+            <b>Waking up the server…</b>
+            <p className="muted" style={{ margin: '6px 0' }}>
+              This demo runs on free hosting that goes to sleep when nobody is using it, so the first visit can take up to a minute.
+              You do not need to do anything: you can pick a role below and sign-in will continue as soon as the server is ready.
+              <span aria-hidden="true"> ({seconds}s)</span>
+            </p>
+            <div className="bar" aria-hidden="true"><i style={{ width: `${Math.min(100, (seconds / 60) * 100)}%` }} /></div>
+          </div>)}
 
-      {waking && (
-        <div role="status" className="card" style={{ textAlign: 'left', borderColor: 'var(--accent)' }}>
-          <b>Waking up the server…</b>
-          <p className="muted" style={{ margin: '6px 0' }}>
-            This demo runs on free hosting that goes to sleep when nobody is using it, so the first visit can take up to a minute.
-            You do not need to do anything: you can pick a role below and sign-in will continue as soon as the server is ready.
-            <span aria-hidden="true"> ({seconds}s)</span>
-          </p>
-          <div className="bar" aria-hidden="true"><i style={{ width: `${Math.min(100, (seconds / 60) * 100)}%` }} /></div>
-        </div>)}
+        <button className="primary" style={{ padding: '12px 22px', fontSize: 16 }} disabled={signingIn} onClick={() => enter('manager', '/brand')}>
+          {signingIn ? (waking ? 'Waiting for the server…' : 'Signing in…') : 'Start judge walkthrough'}
+        </button>
+        <p className="muted" style={{ marginTop: 8, marginBottom: 0 }}>No signup. Five guided steps, about five minutes.</p>
+        {error && (
+          <div className="toast" role="alert" style={{ justifyContent: 'center', gap: 12 }}>
+            <span>{error}</span><button onClick={() => window.location.reload()}>Try again</button>
+          </div>)}
+      </PerspectiveTunnelHero>
 
-      <button className="primary" style={{ padding: '12px 22px', fontSize: 16 }} disabled={signingIn} onClick={() => enter('manager', '/brand')}>
-        {signingIn ? (waking ? 'Waiting for the server…' : 'Signing in…') : 'Start judge walkthrough'}
-      </button>
-      <p className="muted" style={{ marginTop: 8 }}>No signup. Five guided steps, about five minutes.</p>
-
-      <div className="card" style={{ textAlign: 'left', marginTop: 28 }}>
-        <b>Or explore as a role</b>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-          {ROLES.map((r) => (
-            <button key={r.role} disabled={signingIn} onClick={() => enter(r.role)} style={{ flex: '1 1 170px', textAlign: 'left', padding: 12 }}>
-              <div style={{ fontWeight: 600 }}>{r.name} · {r.label}</div>
-              <div className="muted" style={{ fontSize: 13 }}>{r.desc}</div>
-            </button>))}
+      <div style={{ maxWidth: 680, margin: '32px auto 56px', padding: '0 16px', textAlign: 'center' }}>
+        <div className="card" style={{ textAlign: 'left' }}>
+          <b>Or explore as a role</b>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+            {ROLES.map((r) => (
+              <button key={r.role} disabled={signingIn} onClick={() => enter(r.role)} style={{ flex: '1 1 170px', textAlign: 'left', padding: 12 }}>
+                <div style={{ fontWeight: 600 }}>{r.name} · {r.label}</div>
+                <div className="muted" style={{ fontSize: 13 }}>{r.desc}</div>
+              </button>))}
+          </div>
         </div>
-      </div>
-      {error && (
-        <div className="toast" role="alert" style={{ justifyContent: 'center', gap: 12 }}>
-          <span>{error}</span><button onClick={() => window.location.reload()}>Try again</button>
-        </div>)}
 
-      <p style={{ marginTop: 28 }}><a href="/about">What changed since Round 1</a> · <a href="/roadmap">Round 3 results</a></p>
-      <p className="muted">
-        API {health ? <span className={`badge ${health.api === 'up' ? 'green' : 'red'}`}>{health.api}</span> : '…'}
-        {' '}AI service {health ? <span className={`badge ${health.ai === 'up' ? 'green' : 'red'}`}>{health.ai}</span> : '…'}
-      </p>
-    </div>
+        <p style={{ marginTop: 28 }}><a href="/about">What changed since Round 1</a> · <a href="/roadmap">Round 3 results</a></p>
+        <p className="muted">
+          API {health ? <span className={`badge ${health.api === 'up' ? 'green' : 'red'}`}>{health.api}</span> : '…'}
+          {' '}AI service {health ? <span className={`badge ${health.ai === 'up' ? 'green' : 'red'}`}>{health.ai}</span> : '…'}
+        </p>
+      </div>
+    </>
   );
 }
