@@ -23,7 +23,8 @@ async function audit(page, label, scheme) {
 }
 
 for (const scheme of ['light', 'dark']) {
-  const ctx = (role) => browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme: scheme });
+  // The site is dark unless a choice is saved, so each pass saves its own theme: the "light" pass really audits the light theme.
+  const ctx = async () => { const c = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme: scheme }); await c.addInitScript((t) => localStorage.setItem('verity_theme', t), scheme); return c; };
   const login = async (page, label) => { await page.goto(WEB + '/'); await page.getByText(label).first().click(); await page.waitForURL('**/queue'); await page.waitForSelector('tbody tr', { timeout: 60000 }); };
 
   // public pages
