@@ -153,7 +153,7 @@ const HWF_CSS = `
 }
 .hwf-brand strong { display: block; font-weight: 500; }
 .hwf-brand span { opacity: .45; }
-.hwf-col h3 { margin: 0; font: inherit; opacity: .4; font-weight: 500; }
+.hwf-col h2 { margin: 0; font: inherit; opacity: .4; font-weight: 500; }
 .hwf-col ul { list-style: none; margin: 0; padding: 0; }
 .hwf-col a, .hwf-up {
   color: inherit; text-decoration: none; opacity: .78; background: none; border: 0; padding: 0;
@@ -474,7 +474,7 @@ export default function HalftoneWordmarkFooter({
         </div>
         {columns.map((col) => (
           <nav className="hwf-col" key={col.title} aria-label={col.title}>
-            <h3>{col.title}</h3>
+            <h2>{col.title}</h2>
             <ul>
               {col.links.map((l) => (
                 <li key={l.label}>
