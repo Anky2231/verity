@@ -11,7 +11,7 @@ const check = (name, ok, extra = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const errors = [];
 const open = async (scheme = 'light', width = 1280) => {
-  const c = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: scheme }); const p = await c.newPage();
+  const c = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: scheme }); await c.addInitScript((t) => localStorage.setItem('verity_theme', t), scheme); const p = await c.newPage();
   p.on('pageerror', (e) => errors.push(String(e))); p.on('console', (m) => m.type() === 'error' && !/404|favicon|Failed to load resource/.test(m.text()) && errors.push(m.text()));
   return p;
 };
