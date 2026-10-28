@@ -33,7 +33,7 @@ export function VerityHero({ eyebrow, title, description, tags = [] }: VerityHer
 
   return (
     <Card className="relative box-border flex w-full flex-col overflow-hidden border-neutral-800 bg-black/[0.96] text-white md:h-[500px] md:flex-row">
-      <Spotlight className="-top-40 left-0 md:-top-20 md:left-60" size={400} />
+      <Spotlight className="-top-40 left-0 md:-top-20 md:left-60" />
 
       <div className="relative z-10 box-border flex flex-1 flex-col justify-center p-8">
         <p className="m-0 font-mono text-xs uppercase tracking-[0.3em] text-indigo-300">{eyebrow}</p>
