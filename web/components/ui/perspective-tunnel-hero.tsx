@@ -107,7 +107,7 @@ function CardFace({ item, compact = false }: { item: TunnelItem; compact?: boole
   const Icon = item.icon;
   if (item.src) {
     return (
-      <div className="relative h-full w-full overflow-hidden rounded-2xl bg-neutral-200 shadow-2xl shadow-neutral-950/20 ring-1 ring-black/10 dark:bg-neutral-900 dark:shadow-black/90 dark:ring-white/15">
+      <div className="relative box-border h-full w-full overflow-hidden rounded-2xl bg-neutral-200 shadow-2xl shadow-neutral-950/20 ring-1 ring-black/10 dark:bg-neutral-900 dark:shadow-black/90 dark:ring-white/15">
         {/* The picture is decoration (the title and caption carry the meaning), a small local file, and it sits inside 3D
             transforms, so next/image's optimiser adds nothing here. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -121,7 +121,7 @@ function CardFace({ item, compact = false }: { item: TunnelItem; compact?: boole
   }
   return (
     <div
-      className={`relative flex h-full w-full flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br ${TONES[item.tone ?? "indigo"]} p-4 text-white shadow-2xl shadow-neutral-950/20 ring-1 ring-black/10 dark:shadow-black/90 dark:ring-white/15 sm:p-5`}
+      className={`relative box-border flex h-full w-full flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br ${TONES[item.tone ?? "indigo"]} p-4 text-white shadow-2xl shadow-neutral-950/20 ring-1 ring-black/10 dark:shadow-black/90 dark:ring-white/15 sm:p-5`}
     >
       {Icon ? <Icon aria-hidden="true" className="h-8 w-8 text-white/90" strokeWidth={1.5} /> : null}
       <div>
@@ -191,8 +191,10 @@ export default function PerspectiveTunnelHero({
 
   const [stage, setStage] = useState<StageDimensions>({ width: 1440, height: 900, isMobile: false });
   const [coarse, setCoarse] = useState(false);
-  // No 3D for touch screens (no wheel to fly with) or for visitors who asked for less motion: the cards become a plain grid.
-  const flat = Boolean(reduce) || coarse;
+  const [mounted, setMounted] = useState(false);
+  // No 3D for touch screens (no wheel to fly with), narrow windows, or visitors who asked for less motion: the cards become a plain grid.
+  // It is decided only after mounting, so the first client render matches the server's HTML and hydration is clean.
+  const flat = mounted && (Boolean(reduce) || coarse || stage.width < 768);   // narrow windows too: the corridor needs room
 
   useEffect(() => {
     const update = () =>
@@ -202,6 +204,7 @@ export default function PerspectiveTunnelHero({
     const mq = window.matchMedia("(pointer: coarse)");
     const onChange = () => setCoarse(mq.matches);
     onChange();
+    setMounted(true);
     mq.addEventListener("change", onChange);
     return () => {
       window.removeEventListener("resize", update);
@@ -246,8 +249,8 @@ export default function PerspectiveTunnelHero({
     <section
       ref={containerRef}
       aria-labelledby="verity-hero-title"
-      className={`relative flex w-full select-none flex-col items-center justify-center overflow-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white ${
-        flat ? "min-h-0 px-4 py-14" : "h-[calc(100svh-3.5rem)] min-h-[600px]"
+      className={`relative box-border flex w-full select-none flex-col items-center justify-center overflow-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white ${
+        flat ? "min-h-0 px-4 py-14" : "h-[calc(100svh-3.5rem)] min-h-[600px] pb-44"
       }`}
       style={{ perspective: stage.isMobile ? "900px" : "1200px", transformStyle: "preserve-3d" }}
     >
@@ -275,7 +278,7 @@ export default function PerspectiveTunnelHero({
         style={flat ? undefined : { scale: titleScale, opacity: titleOpacity }}
         className="relative z-40 flex max-w-2xl flex-col items-center px-4 text-center"
       >
-        <div className="rounded-3xl bg-neutral-50/80 px-4 py-6 backdrop-blur-sm dark:bg-neutral-950/70 sm:px-8">
+        <div className="rounded-3xl bg-neutral-50/85 px-4 py-6 backdrop-blur-sm dark:bg-neutral-950/80 sm:px-8">
           <p className="mb-4 font-mono text-xs uppercase tracking-[0.4em] text-indigo-700 dark:text-indigo-300">{eyebrow}</p>
           <h1 id="verity-hero-title" className="text-4xl font-bold leading-[0.95] tracking-tighter text-neutral-950 dark:text-white sm:text-6xl md:text-7xl">
             {title}
@@ -300,9 +303,9 @@ export default function PerspectiveTunnelHero({
 
       {/* The same cards for touch screens and reduced motion: a plain grid in the normal flow. */}
       {flat && (
-        <ul className="relative z-10 mx-auto mt-10 grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="relative z-10 m-0 mx-auto mt-10 grid list-none p-0 w-full max-w-5xl grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
           {items.map((item) => (
-            <li key={item.id} className="aspect-[5/3] sm:aspect-[4/3]">
+            <li key={item.id} className="min-w-0 aspect-[4/5] md:aspect-[4/3]">
               <CardFace item={item} compact />
             </li>
           ))}
