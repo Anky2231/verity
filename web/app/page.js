@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { API } from '../lib/api';
 import { loginAs } from '../lib/session';
 import { SLOW_MS, pollUntilUp } from '../lib/wake';
+import { VerityHero } from '../components/ui/verity-hero';
 
 const ROLES = [
   { role: 'creator', label: 'Creator', name: 'Maya', desc: 'Write content, fix flags, submit.' },
@@ -60,13 +61,16 @@ export default function Home() {
   }
 
   return (
-    <div style={{ maxWidth: 680, margin: '56px auto', padding: '0 16px', textAlign: 'center' }}>
-      <h1 style={{ fontSize: 38, marginBottom: 4 }}>Verity</h1>
-      <p className="muted" style={{ marginTop: 0, fontSize: 16 }}>Every word. Every pixel. On brand.</p>
-      <p style={{ maxWidth: 480, margin: '16px auto', lineHeight: 1.6 }}>
-        AI agents check content against your brand guidelines and explain every flag. People make the final call, and every decision is recorded.
-      </p>
-
+    <>
+    <div style={{ maxWidth: 1100, margin: '32px auto 0', padding: '0 16px' }}>
+      <VerityHero
+        eyebrow="Verity · Brand governance"
+        title="Every word. Every pixel. On brand."
+        description="AI agents check content against your brand guidelines and explain every flag. People make the final call, and every decision is recorded."
+        tags={['ToneGuard', 'TermGuard', 'ClaimGuard', 'VisualGuard', 'Many brands', 'Brand drift', 'Audit trail']}
+      />
+    </div>
+    <div style={{ maxWidth: 680, margin: '32px auto 56px', padding: '0 16px', textAlign: 'center' }}>
       {waking && (
         <div role="status" className="card" style={{ textAlign: 'left', borderColor: 'var(--accent)' }}>
           <b>Waking up the server…</b>
@@ -104,5 +108,6 @@ export default function Home() {
         {' '}AI service {health ? <span className={`badge ${health.ai === 'up' ? 'green' : 'red'}`}>{health.ai}</span> : '…'}
       </p>
     </div>
+    </>
   );
 }
