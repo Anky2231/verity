@@ -30,7 +30,7 @@ Run on a **fresh browser profile** and then on a **phone**, against the deployed
 - [ ] **Drift.** As Rajan, **Drift**: Social is **Drifting** (about 2 times its baseline, clause Voice §1.2), Email, Blog and Content are Stable. The digest names Social; the bell has a drift alert once, and reloading does not add another. "View the same data as a table" shows the numbers behind each chart.
 - [ ] **Queue.** The queue shows 25 reviews and "Load more"; searching "newsletter" narrows it; search and status filter combine.
 
-- [ ] **Theme.** The header button cycles System, Light and Dark (its label says which). Dark and Light override the computer's own setting, the choice survives a reload with no flash of the other theme, and System goes back to following the computer. Check the queue, review page and dashboard in both.
+- [ ] **Theme.** A first visit is **dark**, even on a computer set to light. The header button cycles Dark, Light and System (its label says which). Light overrides a dark computer, System follows the computer, the choice survives a reload with no flash of the other theme. Check the queue, review page and dashboard in both Dark and Light.
 
 ## Reliability
 - [ ] Phone width (375 px): no horizontal page scroll on `/`, `/queue`, `/review`, `/brand`, `/dashboard`, `/audit`, `/about`, `/roadmap`, `/visual`, `/drift`.
