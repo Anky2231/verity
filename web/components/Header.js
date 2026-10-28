@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '../lib/api';
 import { loginAs, switchBrand, useSession } from '../lib/session';
+import ThemeToggle from './ThemeToggle';
 import { ago } from '../lib/labels';
 
 const NAV = {
@@ -54,6 +55,7 @@ export default function Header() {
         {links.map(([href, label]) => <a key={href} href={href} aria-current={path === href ? 'page' : undefined}>{label}</a>)}
       </nav>
       <span style={{ flex: 1 }} />
+      <ThemeToggle />
       {user && (
         <>
           {brands.length > 1 && (
