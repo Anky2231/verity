@@ -23,9 +23,12 @@
     "@tiptap/pm": "^2.27.3",
     "@tiptap/react": "^2.27.3",
     "@tiptap/starter-kit": "^2.27.3",
+    "autoprefixer": "^10.6.2",
     "next": "14.2.15",
+    "postcss": "^8.5.32",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "tailwindcss": "3.4"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
