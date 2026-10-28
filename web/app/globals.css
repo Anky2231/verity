@@ -3,7 +3,12 @@
 @tailwind utilities;
 
 :root { --bg:#fafafa; --fg:#111; --muted:#666; --card:#fff; --line:#e5e5e5; --accent:#1f4fd8; --green:#15803d; --red:#dc2626; }
-@media (prefers-color-scheme: dark) { :root { --bg:#111; --fg:#eee; --muted:#9a9a9a; --card:#1b1b1b; --line:#2c2c2c; --accent:#7aa2ff; --green:#4ade80; --red:#f87171; } }
+/* Theme: the visitor's choice (data-theme="light" or "dark", set by the header toggle) wins; without a choice the system setting decides. */
+:root { color-scheme: light dark; }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#111; --fg:#eee; --muted:#9a9a9a; --card:#1b1b1b; --line:#2c2c2c; --accent:#7aa2ff; --green:#4ade80; --red:#f87171; } }
+:root[data-theme="dark"] { --bg:#111; --fg:#eee; --muted:#9a9a9a; --card:#1b1b1b; --line:#2c2c2c; --accent:#7aa2ff; --green:#4ade80; --red:#f87171; }
 body { background:var(--bg); color:var(--fg); font-family: system-ui, -apple-system, sans-serif; margin: 0; }
 a { color:var(--accent); }
 button { font:inherit; padding:8px 14px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--fg); cursor:pointer; transition: background .15s; }
@@ -33,7 +38,7 @@ table { font-size:14px; }
 table th { font-weight:600; padding:8px 10px; white-space:nowrap; }
 table td { padding:8px 10px; vertical-align:middle; }
 table tr:hover td { background:var(--bg); }
-.badge.amber { color:#b45309; border-color:#b45309; } @media (prefers-color-scheme: dark) { .badge.amber { color:#fbbf24; border-color:#fbbf24; } }
+.badge.amber { color:#b45309; border-color:#b45309; } @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge.amber { color:#fbbf24; border-color:#fbbf24; } } :root[data-theme="dark"] .badge.amber { color:#fbbf24; border-color:#fbbf24; }
 .doc { max-width: 1000px; margin: 24px auto; padding: 0 16px; line-height: 1.6; }
 .doc h2 { margin: 32px 0 8px; } .doc .scroll { overflow-x: auto; }
 .doc table { width: 100%; border-collapse: collapse; } .doc td, .doc th { text-align: left; vertical-align: top; border-top: 1px solid var(--line); }
@@ -147,6 +152,7 @@ textarea { width:100%; box-sizing:border-box; }
 .btn { display:inline-block; font:inherit; padding:8px 14px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--fg); text-decoration:none; }
 .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary, :root:not([data-theme="light"]) .btn.primary { color:#0b1220; } }
+:root[data-theme="dark"] button.primary, :root[data-theme="dark"] .btn.primary { color:#0b1220; }
 .item-head { display:block; width:100%; text-align:left; background:none; border:0; padding:0; font:inherit; color:inherit; cursor:pointer; }
 .item-head:hover { background:none; }
 .legend { font-size:13px; color:var(--muted); margin:6px 0 0; }
